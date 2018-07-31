@@ -47,3 +47,38 @@ void cellcheck(vector<par_info> *particle, grid_info *grid,
 			(*particle)[cell[i].offset + j] = *target++;
 	}
 }
+
+void batchcheck(
+	vector<par_info> *particle,
+	grid_info *grid,
+	int HEIGHT,
+	int WIDTH,
+	int lr_adjust,
+	int ud_adjust,
+	int num_threads,
+	int index_thread)
+{
+	int height = HEIGHT + ud_adjust;
+	int width;
+	int wpt = (WIDTH + lr_adjust - 1) / num_threads + 1; // width per thread
+
+	for (int x = index_thread * wpt; x < (index_thread + 1) * wpt; ++x)
+		for (int y = 0; y < height - 1; ++y)
+		{
+			if (x < WIDTH + lr_adjust - 1)
+				cellcheck(particle, grid, y, x, HEIGHT, WIDTH);
+		}
+}
+
+void check(
+	vector<par_info> *particle,
+	grid_info *grid,
+	int HEIGHT,
+	int WIDTH,
+	int lr_adjust,
+	int ud_adjust,
+	int num_threads,
+	int index_thread)
+{
+	
+}

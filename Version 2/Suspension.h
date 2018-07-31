@@ -3,20 +3,11 @@
 #ifndef Suspension_H
 #define Suspension_H
 
-#define _USE_MATH_DEFINES
-
-#include <iostream>
-#include <iomanip>
-#include <algorithm>
-#include <random>
-#include <fstream>
-#include <chrono>
-#include <math.h>
-#include <iterator>
-#include <string>
-
+#define NUM_THREADS 4
 
 #include "Basics.h"
+#include "Render.h"
+#include "Export.hpp"
 
 
 class suspension
@@ -30,8 +21,8 @@ public:
 	double epsilon = 0.5;
 	bool lrPeriodic = true;
 	bool udPeriodic = true;
-	double sys_w = 100;
-	double sys_h = 100;
+	double sys_w = 200;
+	double sys_h = 200;
 	double cellsize = 1;
 	double sedv = 0.0;
 	int cutoffCycle = 1000;
@@ -39,15 +30,29 @@ public:
 	double active_portion = 1;
 	bool reversibility;
 	int num = 0;
+	bool pauseforRender = false;
+	bool pauseforShear = true;
+	bool pause = false;
+	bool next_frame = false;
 
 	vector<par_info> particle;
+	render_info renderInfo = {
+		sys_w,
+		sys_h,
+		&pauseforRender,
+		&pauseforShear,
+		&pause,
+		&next_frame,
+		&particle
+	};
+
 
 	void loadConfig();
 	void generateNew();
 	void evolve();
 	void printInfo();
 	void exportPosition();
-	
+
 protected:
 	int width = int(sys_w / cellsize);
 	int height = int(sys_h / cellsize);

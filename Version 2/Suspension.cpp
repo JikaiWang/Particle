@@ -50,11 +50,22 @@ void suspension::evolve()
 	int pre_hash;
 	int cycle = 0;
 
+	thread t[NUM_THREADS];
+
 	random_device rd;
 	mt19937 gen(rd());
 	uniform_real_distribution<> dis(0, 1);
 
 	while ((active_portion > 0 || sedv > 0) && cycle < cutoffCycle) {
+
+		// Wait for rendering
+		if (pause && next_frame) pause = false;
+		if (pauseforRender || pause) {
+			this_thread::sleep_for(chrono::nanoseconds(1));
+			continue;
+		}
+		pauseforShear = true;
+
 		// Generate hash table
 		for (auto par = particle.begin(); par != particle.end(); ++par)
 			par->hash = int(par->x / cellSizeX) + int(par->y / cellSizeY) * width;
@@ -94,10 +105,33 @@ void suspension::evolve()
 		// Main loop
 		if (lrPeriodic) lr_adjust = 1;
 		if (udPeriodic) ud_adjust = 1;
-		for (int y = 0; y < height + ud_adjust - 1; ++y)
-			for (int x = 0; x < width + lr_adjust - 1; ++x)
-				cellcheck(&particle, grid, y, x, height, width);
 
+		if (NUM_THREADS > 1) {
+			for (int i = 0; i < NUM_THREADS; i++)
+			{
+				t[i] = thread(
+					batchcheck,
+					&particle,
+					grid,
+					height,
+					width,
+					lr_adjust,
+					ud_adjust,
+					NUM_THREADS,
+					i
+				);
+			}
+			for (int i = 0; i < NUM_THREADS; i++) {
+				t[i].join();
+			}
+		}
+		else {
+			for (int y = 0; y < height + ud_adjust - 1; ++y)
+				for (int x = 0; x < width + lr_adjust - 1; ++x)
+					cellcheck(&particle, grid, y, x, height, width);
+		}
+		
+		
 
 		// Random kick
 		for (auto par = particle.begin(); par != particle.end(); ++par) {
@@ -138,6 +172,13 @@ void suspension::evolve()
 		}
 		active_portion /= double(particle.size());
 		cout << '\r' << ++cycle << '\t' << int(active_portion * 100) << "%   " << flush;
+
+		pauseforShear = false;
+
+		if (!pause && next_frame) {
+			pause = true;
+			next_frame = false;
+		}
 	}
 	cout << endl;
 	accumulated_cycle += cycle;
