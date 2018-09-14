@@ -1,5 +1,6 @@
 #include "Basics.h"
 
+//index rotation
 int offset(int y, int x, int ydimension, int xdimension)
 {
 	// numpy style indexing
@@ -7,7 +8,7 @@ int offset(int y, int x, int ydimension, int xdimension)
 		+ x - (x / xdimension) * xdimension;
 }
 
-
+//check single cell
 void cellcheck(vector<par_info> *particle, grid_info *grid,
 	int y, int x, int HEIGHT, int WIDTH)
 {
@@ -35,7 +36,7 @@ void cellcheck(vector<par_info> *particle, grid_info *grid,
 			if (par == buffer.end()) par = buffer.begin();
 			if ((target->x - par->x)*(target->x - par->x)
 				+ (target->y - par->y)*(target->y - par->y) < 1)
-				target->tag = 1;
+				target->tag += 1;
 			++par;
 		}
 	}
@@ -48,6 +49,7 @@ void cellcheck(vector<par_info> *particle, grid_info *grid,
 	}
 }
 
+//Used for multithreading
 void batchcheck(
 	vector<par_info> *particle,
 	grid_info *grid,
@@ -59,7 +61,6 @@ void batchcheck(
 	int index_thread)
 {
 	int height = HEIGHT + ud_adjust;
-	int width;
 	int wpt = (WIDTH + lr_adjust - 1) / num_threads + 1; // width per thread
 
 	for (int x = index_thread * wpt; x < (index_thread + 1) * wpt; ++x)
@@ -68,17 +69,4 @@ void batchcheck(
 			if (x < WIDTH + lr_adjust - 1)
 				cellcheck(particle, grid, y, x, HEIGHT, WIDTH);
 		}
-}
-
-void check(
-	vector<par_info> *particle,
-	grid_info *grid,
-	int HEIGHT,
-	int WIDTH,
-	int lr_adjust,
-	int ud_adjust,
-	int num_threads,
-	int index_thread)
-{
-	
 }

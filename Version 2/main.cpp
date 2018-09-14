@@ -6,32 +6,27 @@
 //  Copyright � 2018 Jikai Wang. All rights reserved.
 //
 
-#include "Suspension.h"
-#include "Render.h"
-
-
+#include "Measurement.hpp"
 
 int main(int argc, const char *argv[]) {
 
-	chrono::high_resolution_clock timer;
-	auto start_t = timer.now();
-
-	suspension system1;
-
-	system1.generateNew();
-	system1.printInfo();
-
-	std::thread t1(&suspension::evolve, &system1);
-
-	//initRenderer(system1.renderInfo);
-	//render();
-
-	t1.join();
+//    activation_with_phi();
     
-//    ExportPosition(&system1.particle);
+    
+    
+    suspension system1;
+    system1.generateNew();
+//    for (int i = 0; i < system1.particle.size(); ++i) {
+//        system1.particle[i].y /= 2.0;
+//    }
+    system1.printInfo();
 
-	auto end_t = timer.now();
-	cout << "Elapsed: " << chrono::duration_cast<chrono::seconds>(end_t - start_t).count() << 's' << endl;
+    thread job1(&suspension::evolve, &system1);
 
-	return 0;
+    initRenderer(system1.renderInfo);
+    render();
+
+    job1.join();
+
+    return 0;
 }

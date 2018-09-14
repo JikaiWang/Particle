@@ -3,10 +3,10 @@
 #ifndef Suspension_H
 #define Suspension_H
 
-#define NUM_THREADS 4
+#define NUM_THREADS 2
 
 #include "Basics.h"
-#include "Render.h"
+#include "Render.hpp"
 #include "Export.hpp"
 
 
@@ -21,21 +21,27 @@ public:
 	double epsilon = 0.5;
 	bool lrPeriodic = true;
 	bool udPeriodic = true;
-	double sys_w = 200;
-	double sys_h = 200;
-	double cellsize = 1;
+	double sys_w = 100;
+	double sys_h = 100;
+	double cellsize = 1; //Griding unit size
 	double sedv = 0.0;
-	int cutoffCycle = 1000;
+	int cutoffCycle = 1000000;
+    
+    //Status
 	int accumulated_cycle = 0;
 	double active_portion = 1;
 	bool reversibility;
-	int num = 0;
-	bool pauseforRender = false;
-	bool pauseforShear = true;
-	bool pause = false;
-	bool next_frame = false;
-
+	int num = 0; //Number of particles
+    chrono::high_resolution_clock timer;
+    
+    //Container for particle position and status
 	vector<par_info> particle;
+    
+    //Rendering status API
+    bool pauseforRender = false;
+    bool pauseforShear = true;
+    bool pause = false;
+    bool next_frame = false;
 	render_info renderInfo = {
 		sys_w,
 		sys_h,
@@ -45,7 +51,6 @@ public:
 		&next_frame,
 		&particle
 	};
-
 
 	void loadConfig();
 	void generateNew();

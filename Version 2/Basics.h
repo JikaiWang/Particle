@@ -15,6 +15,7 @@
 #include <chrono>
 #include <iterator>
 #include <string>
+#include <sys/stat.h>
 
 using namespace std;
 
@@ -24,6 +25,7 @@ struct par_info
 	double y;
 	int tag;
 	int pretag;
+    float accutag = 0.0f;
 	int hash;
 };
 
@@ -44,7 +46,7 @@ struct render_info
 	vector<par_info> *p_particle;
 };
 
-int offset(int y, int x, int ydimension, int xdimension);
+int offset(int y, int x, int ydimension, int xdimension); //index rotation
 
 struct less_than_key
 {
@@ -55,6 +57,7 @@ struct less_than_key
 };
 
 void cellcheck(
+    //check single cell
 	vector<par_info> *particle, 
 	grid_info *grid,
 	int y,
@@ -62,7 +65,9 @@ void cellcheck(
 	int HEIGHT,
 	int WIDTH);
 
+
 void batchcheck(
+    //Used for multithreading
 	vector<par_info> *particle, 
 	grid_info *grid,
 	int HEIGHT,
@@ -72,14 +77,6 @@ void batchcheck(
 	int num_threads,
 	int index_thread);
 
-void check(
-	vector<par_info> *particle,
-	grid_info *grid,
-	int HEIGHT,
-	int WIDTH,
-	int lr_adjust,
-	int ud_adjust,
-	int num_threads,
-	int index_thread);
+
 
 #endif // !Basics_H

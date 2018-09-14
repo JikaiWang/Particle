@@ -6,15 +6,15 @@
 //  Copyright © 2018 Jikai Wang. All rights reserved.
 //
 
-#include "Render.h"
+#include "Render.hpp"
 
 int frame_time;
 int base_time;
 int frame_count = 0;
 int CurrentWidth;
-int CurrentHeight = 1360;
+int CurrentHeight = 800;
 int WindowHandle = 0;
-int num_Vertex = 6;
+int num_Vertex;
 int num;
 int i;
 
@@ -115,9 +115,9 @@ void RenderFunction()
         Positions[i++] = 0.0f;
         Positions[i++] = 1.0f;
         i -= 4;
-        Colors[i++] = par->pretag;
+        Colors[i++] = par->accutag;
         Colors[i++] = 0.0f;
-        Colors[i++] = 1 - par->pretag;
+        Colors[i++] = 1 - par->accutag;
         Colors[i++] = 1.0f;
     }
     *pauseforRender = false;
@@ -141,7 +141,7 @@ void RenderFunction()
 
 void CreateVBO(void)
 {
-    GLenum ErrorCheckValue = glGetError();
+    GLenum ErrorCheckValue;
     
     glGenVertexArrays(1, &VaoId);
     glBindVertexArray(VaoId);
@@ -189,7 +189,7 @@ void CreateVBO(void)
 
 void DestroyVBO(void)
 {
-    GLenum ErrorCheckValue = glGetError();
+    GLenum ErrorCheckValue;
     
     glDisableVertexAttribArray(1);
     glDisableVertexAttribArray(0);
@@ -217,7 +217,7 @@ void DestroyVBO(void)
 
 void CreateShaders(void)
 {
-    GLenum ErrorCheckValue = glGetError();
+    GLenum ErrorCheckValue;
     
     VertexShaderId = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(VertexShaderId, 1, &VertexShader, NULL);
@@ -248,7 +248,7 @@ void CreateShaders(void)
 
 void DestroyShader(void)
 {
-    GLenum ErrorCheckValue = glGetError();
+    GLenum ErrorCheckValue;
     
     glUseProgram(0);
     
@@ -328,11 +328,12 @@ void initRenderer(render_info renderInfo)
     pause = renderInfo.p_pause;
     next_frame = renderInfo.p_next_frame;
     particle = renderInfo.p_particle;
-    num = particle->size();
+    num = int(particle->size());
     sys_w = renderInfo.sys_w;
     sys_h = renderInfo.sys_h;
     CurrentWidth = CurrentHeight * sys_w / sys_h;
     
+    num_Vertex = 10 * CurrentHeight / sys_h;
     Circle = new GLfloat[4 * num_Vertex];
     GenCircle();
     Positions = new GLfloat[particle->size() * 4];
@@ -346,7 +347,7 @@ void initRenderer(render_info renderInfo)
     
     glutInitWindowPosition(-1, -1);
     glutInitWindowSize(CurrentWidth, CurrentHeight);
-    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_RGBA | GLUT_3_2_CORE_PROFILE);
+    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_MULTISAMPLE | GLUT_3_2_CORE_PROFILE);
     
     WindowHandle = glutCreateWindow(WINDOW_TITLE_PREFIX);
     

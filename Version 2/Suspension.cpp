@@ -18,6 +18,8 @@ void suspension::loadConfig()
 
 void suspension::generateNew()
 {
+    particle.clear();
+    active_portion = 1;
 	accumulated_cycle = 0;
 	reversibility = false;
 	num = int(sys_w * sys_h * fraction / (M_PI * 0.25));
@@ -43,6 +45,7 @@ void suspension::generateNew()
 
 void suspension::evolve()
 {
+    auto start_t = timer.now();
 	cout << "Start evolving..." << endl;
 
 	grid_info *grid = new grid_info[width * height];
@@ -107,6 +110,7 @@ void suspension::evolve()
 		if (udPeriodic) ud_adjust = 1;
 
 		if (NUM_THREADS > 1) {
+            //multithreading (compute in parallel)
 			for (int i = 0; i < NUM_THREADS; i++)
 			{
 				t[i] = thread(
@@ -126,6 +130,7 @@ void suspension::evolve()
 			}
 		}
 		else {
+            //single core safe version
 			for (int y = 0; y < height + ud_adjust - 1; ++y)
 				for (int x = 0; x < width + lr_adjust - 1; ++x)
 					cellcheck(&particle, grid, y, x, height, width);
@@ -149,8 +154,11 @@ void suspension::evolve()
 			if (par->tag > 0) active_portion += 1;
 
 			// Prepare tags
+            if (par->tag > 0) par->accutag = 1.0f;
+            par->accutag -= 0.004f;
+            if (par->accutag < 0) par->accutag = 0.0f;
 			par->pretag = par->tag;
-			par->tag = 0;
+            par->tag = 0;
 
 			// Deal with boundary condition
 			if (lrPeriodic) {
@@ -195,6 +203,8 @@ void suspension::evolve()
 		reversibility = true;
 		cout << "Reversible" << endl;
 	}
+    auto end_t = timer.now();
+    cout << "Elapsed: " << chrono::duration_cast<chrono::seconds>(end_t - start_t).count() << 's' << endl;
 }
 
 void suspension::printInfo()
@@ -213,6 +223,7 @@ void suspension::printInfo()
 	else cout << "Periodic LR: No" << endl;
 	if (udPeriodic) cout << "Periodic UD: Yes" << endl;
 	else cout << "Periodic UD: No" << endl;
+    cout << "Multithreading: " << NUM_THREADS << endl;
 }
 
 void suspension::exportPosition()

@@ -9,18 +9,19 @@
 #ifndef Render_hpp
 #define Render_hpp
 
+#define WINDOW_TITLE_PREFIX "Suspension system"
+
 #ifdef __APPLE__
 #include <GLUT/glut.h>
 #else
 #include <GL/glut.h>
 #endif
 
-#include <iostream>
-
+#include "Basics.h"
 
 void processNormalKeys(unsigned char key, int x, int y);
 void renderScene();
-void initRenderer();
+void initRenderer(render_info renderInfo);
 void render();
 
 
