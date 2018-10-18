@@ -86,11 +86,13 @@ void activation_with_phi()
     int num_system = 1;
 	int pre_cycle;
 	int random_index;
+    int index;
 	double disp;
 	double angle;
 	double activation_count;
 	suspension system1;
-	vector<par_info> sheared_par;
+    double *X = new double[int(system1.sys_w * system1.sys_h / (M_PI * 0.25))];
+    double *Y = new double[int(system1.sys_w * system1.sys_h / (M_PI * 0.25))];
 	for (int i = 1; i < 71; i++)
 	{
 		system1.fraction = i / 100.0;
@@ -100,18 +102,30 @@ void activation_with_phi()
             system1.generateNew();
             system1.cutoffCycle = 10000;
             system1.evolve();
+            index = 0;
             for (auto par = system1.particle.begin();
                  par != system1.particle.end();
                  ++par)
             {
-                par->pretag = 0;
+                X[index] = par->x;
+                Y[index] = par->y;
+                index++;
             }
-            sheared_par = system1.particle;
             pre_cycle = system1.accumulated_cycle;
             system1.cutoffCycle = 2;
             for (int i = 0; i < num_average; i++)
             {
-                system1.particle = sheared_par;
+                index = 0;
+                for (auto par = system1.particle.begin();
+                     par != system1.particle.end();
+                     ++par)
+                {
+                    par->x = X[index];
+                    par->y = Y[index];
+                    par->pretag = 0;
+                    index++;
+                }
+//                system1.particle = sheared_par;
                 random_index = int(dis(gen) * (system1.num - 0));
                 if (random_index >= system1.particle.size())
                 {
@@ -139,5 +153,7 @@ void activation_with_phi()
             out << system1.fraction << '\t' << activation_count << endl;
         }
 	}
+    delete [] X;
+    delete [] Y;
     out.close();
 }

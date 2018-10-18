@@ -18,7 +18,7 @@ public:
 
 	// parameters
 	double fraction = 0.38;
-	double epsilon = 0.5;
+	double epsilon = 2.0;
 	bool lrPeriodic = true;
 	bool udPeriodic = true;
 	double sys_w = 100;
