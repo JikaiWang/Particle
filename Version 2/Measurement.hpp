@@ -13,4 +13,5 @@
 
 void distri_over_time();
 void activation_with_phi();
+void two_type_particle();
 #endif /* Measurement_hpp */

@@ -10,8 +10,12 @@ int offset(int y, int x, int ydimension, int xdimension)
 
 //check single cell
 void cellcheck(vector<par_info> *particle, grid_info *grid,
-	int y, int x, int HEIGHT, int WIDTH)
+	int y, int x, int HEIGHT, int WIDTH, double diameter)
 {
+//    double testrange[5] = {1.0, 0.95, 0.75, 0.7, 0.5};
+    double testrange[5] = {1.0, 1.0, 1.0, 1.0, 1.0};
+    double Diameter[5] = {1.0/4.0, 1.19/4.0, 1.13/4.0, 1.06/4.0, 1.5/4.0};
+    
 	bool pre_active = false;
 	vector<par_info> buffer; // Partilce to test
 	grid_info cell[4]; // adjacent cells
@@ -35,8 +39,17 @@ void cellcheck(vector<par_info> *particle, grid_info *grid,
 		for (int i = 0; i < buffer.size() - 1; ++i) {
 			if (par == buffer.end()) par = buffer.begin();
 			if ((target->x - par->x)*(target->x - par->x)
-				+ (target->y - par->y)*(target->y - par->y) < 1)
+				+ (target->y - par->y)*(target->y - par->y) <
+                Diameter[target->type] * Diameter[target->type])
 				target->tag += 1;
+            if (target->type == par->type)
+            {
+                if ((target->x - par->x)*(target->x - par->x)
+                    + (target->y - par->y)*(target->y - par->y) < testrange[target->type] * testrange[target->type])
+                {
+                    target->tag += 1;
+                }
+            }
 			++par;
 		}
 	}
@@ -58,7 +71,8 @@ void batchcheck(
 	int lr_adjust,
 	int ud_adjust,
 	int num_threads,
-	int index_thread)
+	int index_thread,
+    double diameter)
 {
 	int height = HEIGHT + ud_adjust;
 	int wpt = (WIDTH + lr_adjust - 1) / num_threads + 1; // width per thread
@@ -67,6 +81,6 @@ void batchcheck(
 		for (int y = 0; y < height - 1; ++y)
 		{
 			if (x < WIDTH + lr_adjust - 1)
-				cellcheck(particle, grid, y, x, HEIGHT, WIDTH);
+				cellcheck(particle, grid, y, x, HEIGHT, WIDTH, diameter);
 		}
 }

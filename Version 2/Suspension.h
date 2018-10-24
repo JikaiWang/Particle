@@ -17,14 +17,16 @@ public:
 	~suspension();
 
 	// parameters
-	double fraction = 0.38;
-	double epsilon = 2.0;
+	double fraction = 0.3;
+	double epsilon = 0.5;
+    double diameter = 1.0;
 	bool lrPeriodic = true;
-	bool udPeriodic = true;
-	double sys_w = 100;
-	double sys_h = 100;
+	bool udPeriodic = false;
+    bool initialOverlap = true;
+	double sys_w = 500;
+	double sys_h = 25;
 	double cellsize = 1; //Griding unit size
-	double sedv = 0.0;
+	double sedv = 0.00001;
 	int cutoffCycle = 1000000;
     
     //Status

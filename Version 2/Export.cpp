@@ -20,7 +20,10 @@ void ExportPosition(vector<par_info> *particle)
     if (out) {
         out.precision(17);
         for (auto par = particle->begin(); par != particle->end(); ++par) {
-            out << par->x << '\t' << par->y << endl;
+            out << par->x << '\t';
+            out << par->y << '\t';
+            out << par->type;
+            out << endl;
         }
         out.close();
     }

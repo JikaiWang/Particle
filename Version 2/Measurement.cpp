@@ -82,7 +82,7 @@ void activation_with_phi()
 	random_device rd;
 	mt19937 gen(rd());
 	uniform_real_distribution<> dis(0, 1);
-	int num_average = 1000;
+	int num_average = 3000;
     int num_system = 1;
 	int pre_cycle;
 	int random_index;
@@ -100,7 +100,7 @@ void activation_with_phi()
         for (int j = 0; j < num_system; j++)
         {
             system1.generateNew();
-            system1.cutoffCycle = 10000;
+            system1.cutoffCycle = 100000;
             system1.evolve();
             index = 0;
             for (auto par = system1.particle.begin();
@@ -156,4 +156,43 @@ void activation_with_phi()
     delete [] X;
     delete [] Y;
     out.close();
+}
+
+void two_type_particle()
+{
+    int num_type = 5;
+    suspension system;
+//    system.diameter = 0.25;
+    double scale = 2650;
+    double Fraction[5] = {210, 355, 530, 405, 1100};
+    system.epsilon = 0.125;
+    
+    vector<par_info> alltype;
+    for (int i = 0; i < num_type; ++i) {
+        system.fraction = Fraction[i] / scale;
+        system.generateNew();
+        for (auto par = system.particle.begin(); par != system.particle.end(); par++)
+        {
+            par->type = i;
+        }
+        alltype.insert(alltype.end(), system.particle.begin(), system.particle.end());
+    }
+    system.particle = alltype;
+//    system.fraction *= num_type;
+    system.num = int(system.particle.size());
+    
+//    thread job1(&suspension::evolve, &system);
+//    initRenderer(system.renderInfo);
+//    render();
+//    job1.join();
+    system.evolve();
+    
+//    for (auto par = system.particle.begin();
+//         par != system.particle.end(); par++)
+//    {
+//        par->x /= system.diameter;
+//        par->y /= system.diameter;
+//    }
+//    ExportPosition(&system.particle);
+    system.exportPosition();
 }

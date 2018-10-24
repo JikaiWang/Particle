@@ -28,17 +28,93 @@ void suspension::generateNew()
 	mt19937 gen(rd());
 	uniform_real_distribution<> dis(0, 1);
 
-	par_info buffer;
-
-	for (int i = 0; i < num; i++)
-	{
-		buffer.x = sys_w * dis(gen);
-		buffer.y = sys_h * dis(gen);
-		buffer.tag = 0;
-		buffer.pretag = 1;
-		buffer.hash = 0;
-		particle.push_back(buffer);
-	}
+    if (initialOverlap)
+    {
+        par_info buffer;
+        for (int i = 0; i < num; i++)
+        {
+            buffer.x = sys_w * dis(gen);
+            buffer.y = sys_h * dis(gen);
+            buffer.tag = 0;
+            buffer.pretag = 1;
+            buffer.hash = 0;
+            particle.push_back(buffer);
+        }
+    }
+    else
+    {
+        int index;
+        int index_x;
+        int index_y;
+        int ix;
+        int iy;
+        par_info buffer;
+        par_info *grid = new par_info[sys_w * sys_h * 4];
+        int current_num = 0;
+        bool overlap;
+        for (int i = 0; i < sys_w * sys_h * 4; i++)
+        {
+            grid[i].pretag = 0;
+        }
+        while (current_num < num)
+        {
+            buffer.x = sys_w * dis(gen);
+            buffer.y = sys_h * dis(gen);
+            buffer.tag = 0;
+            buffer.pretag = 1;
+            buffer.hash = 0;
+            index_x = int(buffer.x);
+            index_y = int(buffer.y);
+            overlap = false;
+            for (int x = index_x - 1; x < index_x + 2; x++) {
+                for (int y = index_y - 1; y < index_y + 2; y++) {
+                    if (x == -1) {
+                        ix = sys_w - 1;
+                    }
+                    else {
+                        ix = x;
+                    }
+                    if (y == -1) {
+                        iy = sys_h - 1;
+                    }
+                    else {
+                        iy = y;
+                    }
+                    index = offset(iy, ix, sys_h, sys_w) * 4;
+                    for (int i = 0; i < 4; i++)
+                    {
+                        if (grid[index + i].pretag == 1)
+                        {
+                            if ((pow(grid[index + i].x - buffer.x, 2.0)
+                                 + pow(grid[index + i].y - buffer.y, 2.0)) < 1.0)
+                            {
+                                overlap = true;
+                            }
+                        }
+                        
+                    }
+                }
+            }
+            if (!overlap)
+            {
+                for (int i = (index_x + sys_w * index_y) * 4;
+                     i < (index_x + sys_w * index_y + 1) * 4; i++)
+                {
+                    if (grid[i].pretag == 0)
+                    {
+                        grid[i] = buffer;
+                        current_num++;
+                        break;
+                    }
+                }
+            }
+        }
+        for (int i = 0; i < sys_w * sys_h * 4; i++)
+        {
+            if (grid[i].pretag == 1) particle.push_back(grid[i]);
+        }
+        delete[] grid;
+    }
 
 	cout << num << " particles generated" << endl;
 }
@@ -122,7 +198,8 @@ void suspension::evolve()
 					lr_adjust,
 					ud_adjust,
 					NUM_THREADS,
-					i
+					i,
+                    diameter
 				);
 			}
 			for (int i = 0; i < NUM_THREADS; i++) {
@@ -133,7 +210,7 @@ void suspension::evolve()
             //single core safe version
 			for (int y = 0; y < height + ud_adjust - 1; ++y)
 				for (int x = 0; x < width + lr_adjust - 1; ++x)
-					cellcheck(&particle, grid, y, x, height, width);
+					cellcheck(&particle, grid, y, x, height, width, diameter);
 		}
 		
 		
@@ -211,6 +288,7 @@ void suspension::printInfo()
 {
 	cout << "Num of particles: " << num << endl;
 	cout << "Packing fraction: " << fraction << endl;
+    cout << "Particle diameter: " << diameter << endl;
 	cout << "System width: " << width << endl;
 	cout << "System height: " << height << endl;
 	cout << "Random kick size: " << epsilon << endl;
@@ -230,7 +308,7 @@ void suspension::exportPosition()
 {
 	std::vector<std::string> buffer;
 	for (auto par = particle.begin(); par != particle.end(); ++par) {
-		buffer.push_back(to_string(par->x) + " " + to_string(par->y));
+		buffer.push_back(to_string(par->x) + " " + to_string(par->y) + " " + to_string(par->type));
 	}
 
 	std::ofstream output_file("./position.txt");

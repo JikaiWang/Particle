@@ -116,9 +116,9 @@ void RenderFunction()
         Positions[i++] = 1.0f;
         i -= 4;
         Colors[i++] = par->accutag;
-        Colors[i++] = 0.0f;
+        Colors[i++] = par->type / 4.0f;
         Colors[i++] = 1 - par->accutag;
-        Colors[i++] = 1.0f;
+        Colors[i++] = 1.0f - par->type / 4.0f;
     }
     *pauseforRender = false;
     

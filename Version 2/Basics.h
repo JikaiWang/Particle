@@ -27,6 +27,7 @@ struct par_info
 	int pretag;
     float accutag = 0.0f;
 	int hash;
+    int type = 0;
 };
 
 struct grid_info
@@ -63,7 +64,8 @@ void cellcheck(
 	int y,
 	int x, 
 	int HEIGHT,
-	int WIDTH);
+	int WIDTH,
+    double diameter);
 
 
 void batchcheck(
@@ -75,7 +77,8 @@ void batchcheck(
 	int lr_adjust, 
 	int ud_adjust,
 	int num_threads,
-	int index_thread);
+	int index_thread,
+    double diameter);
 
 
 

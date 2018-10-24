@@ -11,8 +11,8 @@
 int main(int argc, const char *argv[]) {
 
 //    activation_with_phi();
-    
-    activation_with_phi();
+//    two_type_particle();
+    distri_over_time();
     
 //    suspension system1;
 //    system1.generateNew();
