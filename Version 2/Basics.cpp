@@ -13,8 +13,8 @@ void cellcheck(vector<par_info> *particle, grid_info *grid,
 	int y, int x, int HEIGHT, int WIDTH, double diameter)
 {
 //    double testrange[5] = {1.0, 0.95, 0.75, 0.7, 0.5};
-    double testrange[5] = {1.0, 1.0, 1.0, 1.0, 1.0};
-    double Diameter[5] = {1.0/4.0, 1.19/4.0, 1.13/4.0, 1.06/4.0, 1.5/4.0};
+//    double testrange[5] = {1.0, 1.0, 1.0, 1.0, 1.0};
+//    double Diameter[5] = {1.0/4.0, 1.19/4.0, 1.13/4.0, 1.06/4.0, 1.5/4.0};
     
 	bool pre_active = false;
 	vector<par_info> buffer; // Partilce to test
@@ -40,16 +40,16 @@ void cellcheck(vector<par_info> *particle, grid_info *grid,
 			if (par == buffer.end()) par = buffer.begin();
 			if ((target->x - par->x)*(target->x - par->x)
 				+ (target->y - par->y)*(target->y - par->y) <
-                Diameter[target->type] * Diameter[target->type])
+                diameter * diameter)
 				target->tag += 1;
-            if (target->type == par->type)
-            {
-                if ((target->x - par->x)*(target->x - par->x)
-                    + (target->y - par->y)*(target->y - par->y) < testrange[target->type] * testrange[target->type])
-                {
-                    target->tag += 1;
-                }
-            }
+//            if (target->type == par->type)
+//            {
+//                if ((target->x - par->x)*(target->x - par->x)
+//                    + (target->y - par->y)*(target->y - par->y) < testrange[target->type] * testrange[target->type])
+//                {
+//                    target->tag += 1;
+//                }
+//            }
 			++par;
 		}
 	}

@@ -91,7 +91,6 @@ void suspension::generateNew()
                                 overlap = true;
                             }
                         }
-                        
                     }
                 }
             }
@@ -314,4 +313,46 @@ void suspension::exportPosition()
 	std::ofstream output_file("./position.txt");
 	std::ostream_iterator<std::string> output_iterator(output_file, "\n");
 	std::copy(buffer.begin(), buffer.end(), output_iterator);
+}
+
+void suspension::varianceNum()
+{
+    int num_box = 1000;
+    int num_decade = 4;
+    int num_steps = 20;
+    int num_var = num_decade * num_steps;
+    double rho;
+    double rho_square;
+    double center_x;
+    double center_y;
+    double box_radius;
+    double distance;
+    double area;
+    variance.clear();
+    
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_real_distribution<> dis(0, 1);
+    
+    for (int l = 0; l < num_var; ++l) {
+        if (min(sys_h, sys_w) > diameter * (2 + pow(10, double(l)/double(num_steps))))
+        {
+            box_radius = 0.5 * diameter * pow(10, double(l)/double(num_steps));
+            rho = 0.0;
+            rho_square = 0.0;
+            for (int i = 0; i < num_box; ++i) {
+                center_x = dis(gen) * (sys_w - 2 * diameter - 2 * box_radius) + diameter + box_radius;
+                center_y = dis(gen) * (sys_h - 2 * diameter - 2 * box_radius) + diameter + box_radius;
+                area = 0;
+                for (auto par = particle.begin(); par != particle.end(); ++par) {
+                    distance = sqrt(pow(par->x - center_x, 2.0) + pow(par->y - center_y, 2.0)) - box_radius;
+                    area += M_PI * pow(diameter/2.0, 2.0);
+                }
+                area /= M_PI * pow(box_radius, 2.0);
+                rho += area;
+                rho_square += pow(area, 2.0);
+            }
+            variance.push_back({box_radius, rho_square/double(num_box) - pow(rho/double(num_box), 2.0)});
+        }
+    }
 }

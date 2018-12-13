@@ -36,6 +36,12 @@ struct grid_info
 	int count;
 };
 
+struct var_info
+{
+    double box_size;
+    double var;
+};
+
 struct render_info
 {
 	double sys_w;

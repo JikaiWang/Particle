@@ -8,6 +8,7 @@
 #include "Basics.h"
 #include "Render.hpp"
 #include "Export.hpp"
+#include "Measurement.hpp"
 
 
 class suspension
@@ -17,17 +18,17 @@ public:
 	~suspension();
 
 	// parameters
-	double fraction = 0.3;
+	double fraction = 0.4;
 	double epsilon = 0.5;
     double diameter = 1.0;
 	bool lrPeriodic = true;
-	bool udPeriodic = false;
+	bool udPeriodic = true;
     bool initialOverlap = true;
-	double sys_w = 500;
-	double sys_h = 25;
+	double sys_w = 50;
+	double sys_h = 50;
 	double cellsize = 1; //Griding unit size
-	double sedv = 0.00001;
-	int cutoffCycle = 1000000;
+	double sedv = 0.0;
+	int cutoffCycle = 100000;
     
     //Status
 	int accumulated_cycle = 0;
@@ -38,6 +39,7 @@ public:
     
     //Container for particle position and status
 	vector<par_info> particle;
+    vector<var_info> variance;
     
     //Rendering status API
     bool pauseforRender = false;
@@ -59,6 +61,7 @@ public:
 	void evolve();
 	void printInfo();
 	void exportPosition();
+    void varianceNum();
 
 protected:
 	int width = int(sys_w / cellsize);
