@@ -18,14 +18,14 @@ public:
 	~suspension();
 
 	// parameters
-	double fraction = 0.4;
+	double fraction = 0.36;
 	double epsilon = 0.5;
     double diameter = 1.0;
 	bool lrPeriodic = true;
 	bool udPeriodic = true;
     bool initialOverlap = true;
-	double sys_w = 50;
-	double sys_h = 50;
+	double sys_w = 200;
+	double sys_h = 200;
 	double cellsize = 1; //Griding unit size
 	double sedv = 0.0;
 	int cutoffCycle = 100000;
@@ -60,8 +60,9 @@ public:
 	void generateNew();
 	void evolve();
 	void printInfo();
-	void exportPosition();
     void varianceNum();
+    void exportPosition();
+    void exportVariance();
 
 protected:
 	int width = int(sys_w / cellsize);

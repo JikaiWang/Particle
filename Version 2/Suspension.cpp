@@ -38,6 +38,7 @@ void suspension::generateNew()
             buffer.tag = 0;
             buffer.pretag = 1;
             buffer.hash = 0;
+            buffer.tag = 0;
             particle.push_back(buffer);
         }
     }
@@ -305,20 +306,32 @@ void suspension::printInfo()
 
 void suspension::exportPosition()
 {
-	std::vector<std::string> buffer;
-	for (auto par = particle.begin(); par != particle.end(); ++par) {
-		buffer.push_back(to_string(par->x) + " " + to_string(par->y) + " " + to_string(par->type));
-	}
+    std::vector<std::string> buffer;
+    for (auto par = particle.begin(); par != particle.end(); ++par) {
+        buffer.push_back(to_string(par->x) + " " + to_string(par->y) + " " + to_string(par->type));
+    }
+    
+    std::ofstream output_file("./position.txt");
+    std::ostream_iterator<std::string> output_iterator(output_file, "\n");
+    std::copy(buffer.begin(), buffer.end(), output_iterator);
+}
 
-	std::ofstream output_file("./position.txt");
-	std::ostream_iterator<std::string> output_iterator(output_file, "\n");
-	std::copy(buffer.begin(), buffer.end(), output_iterator);
+void suspension::exportVariance()
+{
+    std::vector<std::string> buffer;
+    for (auto par = variance.begin(); par != variance.end(); ++par) {
+        buffer.push_back(to_string(log10(par->box_size)) + " " + to_string(log10(par->var)));
+    }
+    
+    std::ofstream output_file("./variance.txt");
+    std::ostream_iterator<std::string> output_iterator(output_file, "\n");
+    std::copy(buffer.begin(), buffer.end(), output_iterator);
 }
 
 void suspension::varianceNum()
 {
     int num_box = 1000;
-    int num_decade = 4;
+    int num_decade = 10;
     int num_steps = 20;
     int num_var = num_decade * num_steps;
     double rho;
@@ -346,13 +359,16 @@ void suspension::varianceNum()
                 area = 0;
                 for (auto par = particle.begin(); par != particle.end(); ++par) {
                     distance = sqrt(pow(par->x - center_x, 2.0) + pow(par->y - center_y, 2.0)) - box_radius;
-                    area += M_PI * pow(diameter/2.0, 2.0);
+                    if (distance < 0)
+                    {
+                        area += M_PI * pow(diameter/2.0, 2.0);
+                    }
                 }
                 area /= M_PI * pow(box_radius, 2.0);
                 rho += area;
                 rho_square += pow(area, 2.0);
             }
-            variance.push_back({box_radius, rho_square/double(num_box) - pow(rho/double(num_box), 2.0)});
+            variance.push_back({2 * box_radius / diameter, rho_square/double(num_box) - pow(rho/double(num_box), 2.0)});
         }
     }
 }
