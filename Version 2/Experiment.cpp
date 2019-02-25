@@ -196,3 +196,11 @@ void two_type_particle()
 //    ExportPosition(&system.particle);
     system.exportPosition();
 }
+
+void density_dist_over_time()
+{
+    suspension system;
+    system.generateNew();
+    system.evolve();
+    
+}

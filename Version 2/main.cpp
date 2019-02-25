@@ -14,11 +14,23 @@ int main(int argc, const char *argv[]) {
 //    two_type_particle();
 //    distri_over_time();
     
+    
     suspension system1;
     system1.generateNew();
     system1.evolve();
-    system1.varianceNum();
-    system1.exportVariance();
+//    system1.exportPosition();
+//    system1.varianceNum();
+    system1.structuralFactor();
+    
+    
+//    videoWriter video(&system1.particle, &system1.renderInfo);
+//    for (int i = 0; i < 10; ++i) {
+//        video.writeFrame();
+//        system1.evolve();
+//    }
+//    system1.exportDensityXY();
+//    system1.varianceNum();
+//    system1.exportVariance();
 //    for (int i = 0; i < system1.particle.size(); ++i) {
 //        system1.particle[i].y /= 2.0;
 //    }

@@ -16,6 +16,8 @@
 #include <iterator>
 #include <string>
 #include <sys/stat.h>
+#include <complex>
+#include <cmath>
 
 using namespace std;
 

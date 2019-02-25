@@ -22,8 +22,8 @@ void suspension::generateNew()
     active_portion = 1;
 	accumulated_cycle = 0;
 	reversibility = false;
-	num = int(sys_w * sys_h * fraction / (M_PI * 0.25));
-
+    num = int(sys_w * sys_h * (1 - top_blank) * fraction / (M_PI * 0.25));
+    
 	random_device rd;
 	mt19937 gen(rd());
 	uniform_real_distribution<> dis(0, 1);
@@ -34,7 +34,7 @@ void suspension::generateNew()
         for (int i = 0; i < num; i++)
         {
             buffer.x = sys_w * dis(gen);
-            buffer.y = sys_h * dis(gen);
+            buffer.y = (1 - top_blank) * sys_h * dis(gen);
             buffer.tag = 0;
             buffer.pretag = 1;
             buffer.hash = 0;
@@ -50,10 +50,10 @@ void suspension::generateNew()
         int ix;
         int iy;
         par_info buffer;
-        par_info *grid = new par_info[sys_w * sys_h * 4];
+        par_info *grid = new par_info[int(sys_w * sys_h * 4)];
         int current_num = 0;
         bool overlap;
-        for (int i = 0; i < sys_w * sys_h * 4; i++)
+        for (int i = 0; i < int(sys_w * sys_h * 4); i++)
         {
             grid[i].pretag = 0;
         }
@@ -281,7 +281,9 @@ void suspension::evolve()
 		cout << "Reversible" << endl;
 	}
     auto end_t = timer.now();
-    cout << "Elapsed: " << chrono::duration_cast<chrono::seconds>(end_t - start_t).count() << 's' << endl;
+    cout << "Elapsed: ";
+    cout << chrono::duration_cast<chrono::seconds>(end_t - start_t).count();
+    cout << 's' << endl;
 }
 
 void suspension::printInfo()
@@ -311,22 +313,11 @@ void suspension::exportPosition()
         buffer.push_back(to_string(par->x) + " " + to_string(par->y) + " " + to_string(par->type));
     }
     
-    std::ofstream output_file("./position.txt");
+    std::ofstream output_file("./output/position.txt");
     std::ostream_iterator<std::string> output_iterator(output_file, "\n");
     std::copy(buffer.begin(), buffer.end(), output_iterator);
 }
 
-void suspension::exportVariance()
-{
-    std::vector<std::string> buffer;
-    for (auto par = variance.begin(); par != variance.end(); ++par) {
-        buffer.push_back(to_string(log10(par->box_size)) + " " + to_string(log10(par->var)));
-    }
-    
-    std::ofstream output_file("./variance.txt");
-    std::ostream_iterator<std::string> output_iterator(output_file, "\n");
-    std::copy(buffer.begin(), buffer.end(), output_iterator);
-}
 
 void suspension::varianceNum()
 {
@@ -348,6 +339,7 @@ void suspension::varianceNum()
     uniform_real_distribution<> dis(0, 1);
     
     for (int l = 0; l < num_var; ++l) {
+        cout << int(100 * float(l) / float(num_var)) << "%\r" << flush;
         if (min(sys_h, sys_w) > diameter * (2 + pow(10, double(l)/double(num_steps))))
         {
             box_radius = 0.5 * diameter * pow(10, double(l)/double(num_steps));
@@ -371,4 +363,118 @@ void suspension::varianceNum()
             variance.push_back({2 * box_radius / diameter, rho_square/double(num_box) - pow(rho/double(num_box), 2.0)});
         }
     }
+    
+    std::vector<std::string> buffer;
+    for (auto par = variance.begin(); par != variance.end(); ++par) {
+        buffer.push_back(to_string(log10(par->box_size)) + " " + to_string(log10(par->var)));
+    }
+    
+    char filename[50];
+    chrono::system_clock sys_time;
+    auto in_time_t = std::chrono::system_clock::to_time_t(sys_time.now());
+    sprintf(filename, "./output/variance %f %f %ld.txt", epsilon, fraction, in_time_t);
+    std::ofstream output_file(filename);
+    std::ostream_iterator<std::string> output_iterator(output_file, "\n");
+    std::copy(buffer.begin(), buffer.end(), output_iterator);
+    
+    cout << "Finished varianceNum" << endl;
+}
+
+void suspension::structuralFactor()
+{
+    int iw = int(sys_w);
+    int ih = int(sys_h);
+    vector<double> skxy(4 * iw * ih);
+    vector<double> sk;
+    vector<double> k;
+    double kx;
+    double ky;
+    complex<double> buffer;
+    const complex<double> i(0, 1);
+    
+    for(int y = 0; y < ih; y++)
+    {
+        cout << int(100 * float(y) / float(ih)) << "%\r" << flush;
+        for(int x = 0; x < iw; x++)
+        {
+            kx = 2.0 * M_PI * (x - sys_w / 2.0) / sys_w;
+            ky = 2.0 * M_PI * (y - sys_h / 2.0) / sys_h;
+            buffer = complex<double>(0.0, 0.0);
+            for(auto par = particle.begin(); par != particle.end(); par++)
+            {
+                buffer += exp(i * (kx * par->x + ky * par->y));
+            }
+            skxy[y * iw + x] = pow(abs(buffer), 2.0) / double(num);
+            if (kx != 0.0 && ky != 0.0)
+            {
+                sk.push_back(skxy[y * iw + x]);
+                k.push_back(sqrt(pow(kx, 2.0) + pow(ky, 2.0)));
+            }
+        }
+    }
+    
+    int max = int(*max_element(k.begin(), k.end()) * sys_w * 0.5 / M_PI + 1.0);
+    vector<double> result(max, 0.0);
+    vector<double> count(max, 0.0);
+    
+    for (int n = 0; n < sk.size(); ++n) {
+        result[int(k[n] * sys_w * 0.5 / M_PI)] += sk[n];
+        count[int(k[n] * sys_h * 0.5 / M_PI)] += 1.0;
+    }
+    
+    char filename[50];
+    chrono::system_clock sys_time;
+    auto in_time_t = std::chrono::system_clock::to_time_t(sys_time.now());
+    sprintf(filename, "./output/sk %f %f %ld.txt", epsilon, fraction, in_time_t);
+    ofstream out;
+    out.open(filename);
+    if (out) {
+        out.precision(17);
+        for (int n = 0; n < result.size(); ++n) {
+            if (count[n] != 0.0)
+            {
+                out << 2 * M_PI * n / sys_w << '\t';
+                out << result[n]/count[n] << endl;
+            }
+        }
+        out.close();
+    }
+    else {
+        cout << "Cannot open output file" << endl;
+    }
+    cout << "Finished structuralFactor" << endl;
+}
+
+
+void suspension::exportDensityXY()
+{
+    double steps_x = 100;
+    double steps_y = 1;
+    int arrlen_x = int(sys_w / steps_x);
+    int arrlen_y = int(sys_h / steps_y);
+    double distribution[arrlen_x][arrlen_y];
+    string outputStr;
+    
+    for (int x = 0; x < arrlen_x; ++x) {
+        for (int y = 0; y < arrlen_y; ++y) {
+            distribution[x][y] = 0.0;
+        }
+    }
+    
+    for (auto par = particle.begin(); par != particle.end(); ++par) {
+        distribution[int(par->x / steps_x)][int(par->y / steps_y)] += M_PI * pow(diameter, 2.0) * 0.25 / (steps_x * steps_y);
+    }
+    
+    std::vector<std::string> buffer;
+    for (int x = 0; x < arrlen_x; ++x) {
+        outputStr = "";
+        for (int y = 0; y < arrlen_y; ++y) {
+            outputStr += to_string(distribution[x][y]) + " ";
+        }
+        buffer.push_back(outputStr);
+    }
+    
+    std::ofstream output_file("./densityXY.txt");
+    std::ostream_iterator<std::string> output_iterator(output_file, "\n");
+    std::copy(buffer.begin(), buffer.end(), output_iterator);
 }

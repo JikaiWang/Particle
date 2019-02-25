@@ -14,4 +14,5 @@
 void distri_over_time();
 void activation_with_phi();
 void two_type_particle();
+void density_dist_over_time();
 #endif /* Experiment_hpp */

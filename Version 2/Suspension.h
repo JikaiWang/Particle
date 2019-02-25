@@ -8,7 +8,7 @@
 #include "Basics.h"
 #include "Render.hpp"
 #include "Export.hpp"
-#include "Measurement.hpp"
+#include "VideoWriter.hpp"
 
 
 class suspension
@@ -18,18 +18,19 @@ public:
 	~suspension();
 
 	// parameters
-	double fraction = 0.36;
+	double fraction = 0.37;
 	double epsilon = 0.5;
     double diameter = 1.0;
 	bool lrPeriodic = true;
 	bool udPeriodic = true;
     bool initialOverlap = true;
-	double sys_w = 200;
-	double sys_h = 200;
+	double sys_w = 100;
+	double sys_h = 100;
 	double cellsize = 1; //Griding unit size
 	double sedv = 0.0;
-	int cutoffCycle = 100000;
-    
+	int cutoffCycle = 1000000;
+    double top_blank = 0.0;
+
     //Status
 	int accumulated_cycle = 0;
 	double active_portion = 1;
@@ -61,8 +62,9 @@ public:
 	void evolve();
 	void printInfo();
     void varianceNum();
+    void structuralFactor();
+    void exportDensityXY();
     void exportPosition();
-    void exportVariance();
 
 protected:
 	int width = int(sys_w / cellsize);
