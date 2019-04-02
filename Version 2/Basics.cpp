@@ -10,7 +10,7 @@ int offset(int y, int x, int ydimension, int xdimension)
 
 //check single cell
 void cellcheck(vector<par_info> *particle, grid_info *grid,
-	int y, int x, int HEIGHT, int WIDTH, double diameter)
+	int y, int x, int HEIGHT, int WIDTH, double gamma, double diameter)
 {
 //    double testrange[5] = {1.0, 0.95, 0.75, 0.7, 0.5};
 //    double testrange[5] = {1.0, 1.0, 1.0, 1.0, 1.0};
@@ -42,6 +42,9 @@ void cellcheck(vector<par_info> *particle, grid_info *grid,
 				+ (target->y - par->y)*(target->y - par->y) <
                 diameter * diameter)
 				target->tag += 1;
+            if ((target->x - par->x)*(target->y - par->y) < 0){
+                if (abs(target->x - par->x) < sqrt(diameter * diameter - (target->y - par->y)*(target->y - par->y)) + abs(target->y - par->y) * gamma)
+                    target->tag += 1;}
 //            if (target->type == par->type)
 //            {
 //                if ((target->x - par->x)*(target->x - par->x)
@@ -72,6 +75,7 @@ void batchcheck(
 	int ud_adjust,
 	int num_threads,
 	int index_thread,
+    double gamma,
     double diameter)
 {
 	int height = HEIGHT + ud_adjust;
@@ -81,6 +85,6 @@ void batchcheck(
 		for (int y = 0; y < height - 1; ++y)
 		{
 			if (x < WIDTH + lr_adjust - 1)
-				cellcheck(particle, grid, y, x, HEIGHT, WIDTH, diameter);
+				cellcheck(particle, grid, y, x, HEIGHT, WIDTH, gamma, diameter);
 		}
 }

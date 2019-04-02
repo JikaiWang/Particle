@@ -18,7 +18,8 @@ public:
 	~suspension();
 
 	// parameters
-	double fraction = 0.38;
+	double fraction = 0.378;
+    double gamma = 0.0;
 	double epsilon = 0.5;
     double diameter = 1.0;
 	bool lrPeriodic = true;
@@ -26,7 +27,7 @@ public:
     bool initialOverlap = true;
 	double sys_w = 100;
 	double sys_h = 100;
-    double cellsize = 1; //Griding unit size
+    double cellsize = 4; //Griding unit size
 	double sedv = 0.0;
 	int cutoffCycle = 100;
     double top_blank = 0.0;

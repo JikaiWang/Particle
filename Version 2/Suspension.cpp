@@ -199,6 +199,7 @@ void suspension::evolve()
 					ud_adjust,
 					NUM_THREADS,
 					i,
+                    gamma,
                     diameter
 				);
 			}
@@ -210,7 +211,7 @@ void suspension::evolve()
             //single core safe version
 			for (int y = 0; y < height + ud_adjust - 1; ++y)
 				for (int x = 0; x < width + lr_adjust - 1; ++x)
-					cellcheck(&particle, grid, y, x, height, width, diameter);
+					cellcheck(&particle, grid, y, x, height, width, gamma, diameter);
 		}
 		
 		

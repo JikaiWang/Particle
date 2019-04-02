@@ -73,6 +73,7 @@ void cellcheck(
 	int x, 
 	int HEIGHT,
 	int WIDTH,
+    double gamma,
     double diameter);
 
 
@@ -81,11 +82,12 @@ void batchcheck(
 	vector<par_info> *particle, 
 	grid_info *grid,
 	int HEIGHT,
-	int WIDTH, 
+	int WIDTH,
 	int lr_adjust, 
 	int ud_adjust,
 	int num_threads,
 	int index_thread,
+    double gamma,
     double diameter);
 
 
