@@ -13,14 +13,18 @@ int main(int argc, const char *argv[]) {
 //    activation_with_phi();
 //    two_type_particle();
 //    distri_over_time();
+//    for (int i = 0; i < 10; ++i) {
+//        active_decay();
+//    }
+    active_decay();
+//    suspension system1;
+//    system1.generateNew();
     
-    
-    suspension system1;
-    system1.generateNew();
-    system1.evolve();
+//    cout << system1.fraction << endl;
+//    system1.evolve();
 //    system1.exportPosition();
 //    system1.varianceNum();
-    system1.structuralFactor();
+//    system1.structuralFactor();
     
     
 //    videoWriter video(&system1.particle, &system1.renderInfo);

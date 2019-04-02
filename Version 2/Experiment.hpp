@@ -15,4 +15,6 @@ void distri_over_time();
 void activation_with_phi();
 void two_type_particle();
 void density_dist_over_time();
+void active_phi();
+void active_decay();
 #endif /* Experiment_hpp */

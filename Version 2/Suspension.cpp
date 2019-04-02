@@ -239,20 +239,20 @@ void suspension::evolve()
 
 			// Deal with boundary condition
 			if (lrPeriodic) {
-				if (par->x < 0) par->x += width;
-				if (par->x > width) par->x -= width;
+				if (par->x < 0) par->x += sys_w;
+				if (par->x > sys_w) par->x -= sys_w;
 			}
 			else {
 				if (par->x < 0.5) par->x = 1 - par->x;
-				if (par->x > width - 0.5)   par->x = 2 * width - 1 - par->x;
+				if (par->x > sys_w - 0.5)   par->x = 2 * sys_w - 1 - par->x;
 			}
 			if (udPeriodic) {
-				if (par->y < 0) par->y += height;
-				if (par->y > height) par->y -= height;
+				if (par->y < 0) par->y += sys_h;
+				if (par->y > sys_h) par->y -= sys_h;
 			}
 			else {
 				if (par->y < 0.5) par->y = 1 - par->y;
-				if (par->y > height - 0.5) par->y = 2 * height - 1 - par->y;
+				if (par->y > sys_h - 0.5) par->y = 2 * sys_h - 1 - par->y;
 			}
 		}
 		active_portion /= double(particle.size());

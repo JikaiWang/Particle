@@ -204,3 +204,58 @@ void density_dist_over_time()
     system.evolve();
     
 }
+
+void active_phi()
+{
+    suspension system;
+    for (int i = 1; i < 66; ++i) {
+        system.fraction = i * 0.01;
+        system.generateNew();
+        system.evolve();
+    }
+    char filename[50];
+    chrono::system_clock sys_time;
+    auto in_time_t = std::chrono::system_clock::to_time_t(sys_time.now());
+    sprintf(filename, "./output/fact %ld.txt", in_time_t);
+    ofstream out;
+    out.open(filename);
+    if (out) {
+        out.precision(17);
+        for (int i = 1; i < 66; ++i) {
+            system.fraction = i * 0.01;
+            system.generateNew();
+            system.evolve();
+            out << system.fraction << '\t';
+            out << system.active_portion << endl;
+        }
+        out.close();
+    }
+    else {
+        cout << "Cannot open output file" << endl;
+    }
+}
+
+void active_decay()
+{
+    // measure 100 times ==> 100*cutoffCycle
+    suspension system;
+    system.generateNew();
+    char filename[50];
+    chrono::system_clock sys_time;
+    auto in_time_t = std::chrono::system_clock::to_time_t(sys_time.now());
+    sprintf(filename, "./output/actdecay %ld.txt", in_time_t);
+    ofstream out;
+    out.open(filename);
+    if (out) {
+        out.precision(17);
+        for (int i = 0; i < 100; ++i) {
+            system.evolve();
+            out << (i+1)*system.cutoffCycle << '\t';
+            out << system.active_portion << endl;
+        }
+        out.close();
+    }
+    else {
+        cout << "Cannot open output file" << endl;
+    }
+}

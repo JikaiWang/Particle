@@ -3,7 +3,7 @@
 #ifndef Suspension_H
 #define Suspension_H
 
-#define NUM_THREADS 2
+#define NUM_THREADS 1
 
 #include "Basics.h"
 #include "Render.hpp"
@@ -18,7 +18,7 @@ public:
 	~suspension();
 
 	// parameters
-	double fraction = 0.37;
+	double fraction = 0.38;
 	double epsilon = 0.5;
     double diameter = 1.0;
 	bool lrPeriodic = true;
@@ -26,9 +26,9 @@ public:
     bool initialOverlap = true;
 	double sys_w = 100;
 	double sys_h = 100;
-	double cellsize = 1; //Griding unit size
+    double cellsize = 1; //Griding unit size
 	double sedv = 0.0;
-	int cutoffCycle = 1000000;
+	int cutoffCycle = 100;
     double top_blank = 0.0;
 
     //Status
