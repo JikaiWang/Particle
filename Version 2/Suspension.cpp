@@ -2,31 +2,32 @@
 
 suspension::suspension()
 {
-	cout << "Instance initialized, waiting for parameters..." << endl;
+    cout << "Instance initialized, waiting for parameters..." << endl;
 }
 
 
 suspension::~suspension()
 {
-	cout << "Instance destroyed" << endl;
+    cout << "Instance destroyed" << endl;
 }
 
 void suspension::loadConfig()
 {
-	;
+    ;
 }
 
 void suspension::generateNew()
 {
     particle.clear();
     active_portion = 1;
-	accumulated_cycle = 0;
-	reversibility = false;
+    accumulated_cycle = 0;
+    reversibility = false;
     num = int(sys_w * sys_h * (1 - top_blank) * fraction / (M_PI * 0.25));
+	fraction = num * (M_PI * 0.25) / (sys_w * sys_h * (1 - top_blank));
     
-	random_device rd;
-	mt19937 gen(rd());
-	uniform_real_distribution<> dis(0, 1);
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_real_distribution<> dis(0, 1);
 
     if (initialOverlap)
     {
@@ -116,194 +117,267 @@ void suspension::generateNew()
         delete[] grid;
     }
 
-	cout << num << " particles generated" << endl;
+    cout << num << " particles generated" << endl;
 }
 
 void suspension::evolve()
 {
+    char filename[50];
+    chrono::system_clock sys_time;
+    auto in_time_t = std::chrono::system_clock::to_time_t(sys_time.now());
+    sprintf(filename, "./output/fact %ld.txt", in_time_t);
+    ofstream out;
+    out.open(filename);
+    
+    
+    
     auto start_t = timer.now();
-	cout << "Start evolving..." << endl;
+    cout << "Start evolving..." << endl;
 
-	grid_info *grid = new grid_info[width * height];
-	int count;
-	int pre_hash;
-	int cycle = 0;
+    grid_info *grid = new grid_info[width * height];
+    int count;
+    int pre_hash;
+    int cycle = 0;
+	double avg_count = 0.0f;
+    double avg_fact = 0.0f;
+    double avg_fact2 = 0.0f;
+    bool steady = false;
+    double moving_avg_base = 0.0f;
+    double moving_avg_curr = 0.0f;
+    double moving_queue_base[NUM_MOV_AVG_BASE] = {0};
+    double moving_queue_curr[NUM_MOV_AVG_CURR] = {0};
 
-	thread t[NUM_THREADS];
+    thread t[NUM_THREADS];
 
-	random_device rd;
-	mt19937 gen(rd());
-	uniform_real_distribution<> dis(0, 1);
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_real_distribution<> dis(0, 1);
 
-	while ((active_portion > 0 || sedv > 0) && cycle < cutoffCycle) {
+    while ((active_portion > 0 || sedv > 0) && cycle < cutoffCycle && avg_count < cutoffMeasurement) {
 
-		// Wait for rendering
-		if (pause && next_frame) pause = false;
-		if (pauseforRender || pause) {
-			this_thread::sleep_for(chrono::nanoseconds(1));
-			continue;
-		}
-		pauseforShear = true;
+        // Wait for rendering
+        if (pause && next_frame) pause = false;
+        if (pauseforRender || pause) {
+            this_thread::sleep_for(chrono::nanoseconds(1));
+            continue;
+        }
+        pauseforShear = true;
 
-		// Generate hash table
-		for (auto par = particle.begin(); par != particle.end(); ++par)
-			par->hash = int(par->x / cellSizeX) + int(par->y / cellSizeY) * width;
+        // Generate hash table
+        for (auto par = particle.begin(); par != particle.end(); ++par)
+            par->hash = int(par->x / cellSizeX) + int(par->y / cellSizeY) * width;
 
-		// Sedimentation
-		if (sedv > 0) {
-			for (auto par = particle.begin(); par != particle.end(); ++par) {
-				par->y -= sedv;
-				if (par->y < 2 * cellSizeY) {
-					par->pretag = 1;
-					if (par->y < 0.5) par->y = 0.5;
-				}
-			}
-		}
+        // Sedimentation
+        if (sedv > 0) {
+            for (auto par = particle.begin(); par != particle.end(); ++par) {
+                par->y -= sedv;
+                if (par->y < 2 * cellSizeY) {
+                    par->pretag = 1;
+                    if (par->y < 0.5) par->y = 0.5;
+                }
+            }
+        }
 
-		// Sort by key using radix sort
-		sort(particle.begin(), particle.end(), less_than_key());
+        // Sort by key using radix sort
+        sort(particle.begin(), particle.end(), less_than_key());
 
-		// Get unique count and location
-		for (int i = 0; i < height * width; ++i)
-			grid[i].offset = grid[i].count = 0;
-		pre_hash = particle.begin()->hash;
-		count = 1;
-		grid[pre_hash].offset = 0;
-		for (int i = 1; i < particle.size(); ++i)
-		{
-			if (particle[i].hash == pre_hash) ++count;
-			else {
-				grid[pre_hash].count = count;
-				pre_hash = particle[i].hash;
-				grid[pre_hash].offset = i;
-				count = 1;
-			}
-		}
-		grid[pre_hash].count = count;
+        // Get unique count and location
+        for (int i = 0; i < height * width; ++i)
+            grid[i].offset = grid[i].count = 0;
+        pre_hash = particle.begin()->hash;
+        count = 1;
+        grid[pre_hash].offset = 0;
+        for (int i = 1; i < particle.size(); ++i)
+        {
+            if (particle[i].hash == pre_hash) ++count;
+            else {
+                grid[pre_hash].count = count;
+                pre_hash = particle[i].hash;
+                grid[pre_hash].offset = i;
+                count = 1;
+            }
+        }
+        grid[pre_hash].count = count;
 
-		// Main loop
-		if (lrPeriodic) lr_adjust = 1;
-		if (udPeriodic) ud_adjust = 1;
+        // Main loop
+        if (lrPeriodic) lr_adjust = 1;
+        if (udPeriodic) ud_adjust = 1;
 
-		if (NUM_THREADS > 1) {
+        if (NUM_THREADS > 1) {
             //multithreading (compute in parallel)
-			for (int i = 0; i < NUM_THREADS; i++)
-			{
-				t[i] = thread(
-					batchcheck,
-					&particle,
-					grid,
-					height,
-					width,
-					lr_adjust,
-					ud_adjust,
-					NUM_THREADS,
-					i,
+            for (int i = 0; i < NUM_THREADS; i++)
+            {
+                t[i] = thread(
+                    batchcheck,
+                    &particle,
+                    grid,
+                    height,
+                    width,
+                    lr_adjust,
+                    ud_adjust,
+                    NUM_THREADS,
+                    i,
                     gamma,
                     diameter
-				);
-			}
-			for (int i = 0; i < NUM_THREADS; i++) {
-				t[i].join();
-			}
-		}
-		else {
+                );
+            }
+            for (int i = 0; i < NUM_THREADS; i++) {
+                t[i].join();
+            }
+        }
+        else {
             //single core safe version
-			for (int y = 0; y < height + ud_adjust - 1; ++y)
-				for (int x = 0; x < width + lr_adjust - 1; ++x)
-					cellcheck(&particle, grid, y, x, height, width, gamma, diameter);
-		}
-		
-		
+            for (int y = 0; y < height + ud_adjust - 1; ++y)
+                for (int x = 0; x < width + lr_adjust - 1; ++x)
+                    cellcheck(&particle, grid, y, x, height, width, gamma, diameter);
+        }
+        
+        
 
-		// Random kick
-		for (auto par = particle.begin(); par != particle.end(); ++par) {
-			if (par->tag > 0) {
-				disp = dis(gen) * epsilon;
-				angle = dis(gen) * 2 * M_PI;
-				par->x += disp * cos(angle);
-				par->y += disp * sin(angle);
-			}
-		}
+        // Random kick
+        for (auto par = particle.begin(); par != particle.end(); ++par) {
+            if (par->tag > 0) {
+                disp = dis(gen) * epsilon;
+                angle = dis(gen) * 2 * M_PI;
+                par->x += disp * cos(angle);
+                par->y += disp * sin(angle);
+            }
+        }
 
-		active_portion = 0;
-		for (auto par = particle.begin(); par != particle.end(); ++par) {
-			// Count active
-			if (par->tag > 0) active_portion += 1;
+        active_portion = 0;
+        for (auto par = particle.begin(); par != particle.end(); ++par) {
+            // Count active
+            if (par->tag > 0) active_portion += 1;
 
-			// Prepare tags
+            // Prepare tags
             if (par->tag > 0) par->accutag = 1.0f;
             par->accutag -= 0.004f;
             if (par->accutag < 0) par->accutag = 0.0f;
-			par->pretag = par->tag;
+            par->pretag = par->tag;
             par->tag = 0;
 
-			// Deal with boundary condition
-			if (lrPeriodic) {
-				if (par->x < 0) par->x += sys_w;
-				if (par->x > sys_w) par->x -= sys_w;
-			}
-			else {
-				if (par->x < 0.5) par->x = 1 - par->x;
-				if (par->x > sys_w - 0.5)   par->x = 2 * sys_w - 1 - par->x;
-			}
-			if (udPeriodic) {
-				if (par->y < 0) par->y += sys_h;
-				if (par->y > sys_h) par->y -= sys_h;
-			}
-			else {
-				if (par->y < 0.5) par->y = 1 - par->y;
-				if (par->y > sys_h - 0.5) par->y = 2 * sys_h - 1 - par->y;
-			}
-		}
-		active_portion /= double(particle.size());
-		cout << '\r' << ++cycle << '\t' << int(active_portion * 100) << "%   " << flush;
+            // Deal with boundary condition
+            if (lrPeriodic) {
+                if (par->x < 0) par->x += sys_w;
+                if (par->x > sys_w) par->x -= sys_w;
+            }
+            else {
+                if (par->x < 0.5) par->x = 1 - par->x;
+                if (par->x > sys_w - 0.5)   par->x = 2 * sys_w - 1 - par->x;
+            }
+            if (udPeriodic) {
+                if (par->y < 0) par->y += sys_h;
+                if (par->y > sys_h) par->y -= sys_h;
+            }
+            else {
+                if (par->y < 0.5) par->y = 1 - par->y;
+                if (par->y > sys_h - 0.5) par->y = 2 * sys_h - 1 - par->y;
+            }
+        }
+        active_portion /= double(particle.size());
 
-		pauseforShear = false;
+        // fact and variance
+        if (steady && (cycle%T_INTERVAL == 0))
+        {
+            avg_fact *= avg_count;
+            avg_fact += active_portion;
+            avg_fact2 *= avg_count;
+            avg_fact2 += active_portion * active_portion;
+            avg_count += 1.0f;
+            avg_fact /= avg_count;
+            avg_fact2 /= avg_count;
+        }
+        
+        //moving average base
+        moving_avg_base -= moving_queue_base[cycle%NUM_MOV_AVG_BASE]/double(NUM_MOV_AVG_BASE);
+        moving_avg_base += active_portion/double(NUM_MOV_AVG_BASE);
+        moving_queue_base[cycle%NUM_MOV_AVG_BASE] = active_portion;
+        
+        //moving average current
+        if (cycle > NUM_MOV_AVG_BASE)
+        {
+            moving_avg_curr -= moving_queue_curr[cycle%NUM_MOV_AVG_CURR]/double(NUM_MOV_AVG_CURR);
+            moving_avg_curr += active_portion/double(NUM_MOV_AVG_CURR);
+            moving_queue_curr[cycle%NUM_MOV_AVG_CURR] = active_portion;
+        }
+        
+        // threshold of starting measurement
+        if (!steady)
+        {
+            if (moving_avg_curr > moving_avg_base)
+            {
+                steady = true;
+            }
+        }
+        
+        
+        //////////////////////////////////////// DEBUG START
+        if (out and cycle%T_INTERVAL == 0) {
+            out.precision(17);
+            out << cycle << '\t';
+            out << active_portion << '\t';
+            out << moving_avg_base << '\t';
+            out << moving_avg_curr << '\t';
+            out << avg_fact <<'\t';
+            out << avg_fact2 - avg_fact * avg_fact << endl;
+        }
+        //////////////////////////////////////// DEBUG END
+        
+        
+        cout << '\r' << ++cycle << '\t' << int(active_portion * 100) << "%   " << flush;
 
-		if (!pause && next_frame) {
-			pause = true;
-			next_frame = false;
-		}
-	}
-	cout << endl;
-	accumulated_cycle += cycle;
+        pauseforShear = false;
 
-	delete[] grid;
+        if (!pause && next_frame) {
+            pause = true;
+            next_frame = false;
+        }
+    }
+    cout << endl;
+    accumulated_cycle += cycle;
+    
+    // Gather statistical data
+    var = avg_fact2 - avg_fact * avg_fact;
+    fact = avg_fact;
+    
+    delete[] grid;
 
-	cout << "Evolving finished using " << cycle << " cycles" << endl;
-	cout << "After " << accumulated_cycle << " cycles --> ";
-	if (active_portion > 0) {
-		reversibility = false;
-		cout << "Irreversible" << endl;
-	}
-	else {
-		reversibility = true;
-		cout << "Reversible" << endl;
-	}
+    cout << "Evolving finished using " << cycle << " cycles" << endl;
+    cout << "After " << accumulated_cycle << " cycles --> ";
+    if (active_portion > 0) {
+        reversibility = false;
+        cout << "Irreversible" << endl;
+    }
+    else {
+        reversibility = true;
+        cout << "Reversible" << endl;
+    }
     auto end_t = timer.now();
     cout << "Elapsed: ";
     cout << chrono::duration_cast<chrono::seconds>(end_t - start_t).count();
     cout << 's' << endl;
+    
+    
+    out.close();
 }
 
 void suspension::printInfo()
 {
-	cout << "Num of particles: " << num << endl;
-	cout << "Packing fraction: " << fraction << endl;
+    cout << "Num of particles: " << num << endl;
+    cout << "Packing fraction: " << fraction << endl;
     cout << "Particle diameter: " << diameter << endl;
-	cout << "System width: " << width << endl;
-	cout << "System height: " << height << endl;
-	cout << "Random kick size: " << epsilon << endl;
-	cout << "Sedimentation velocity: " << sedv << endl;
-	cout << "Maximum cycles: " << cutoffCycle << endl;
-	cout << "Current cycle: " << accumulated_cycle << endl;
-	if (reversibility) cout << "Reversible: Yes" << endl;
-	else cout << "Reversible: No" << endl;
-	if (lrPeriodic) cout << "Periodic LR: Yes" << endl;
-	else cout << "Periodic LR: No" << endl;
-	if (udPeriodic) cout << "Periodic UD: Yes" << endl;
-	else cout << "Periodic UD: No" << endl;
+    cout << "System width: " << width << endl;
+    cout << "System height: " << height << endl;
+    cout << "Random kick size: " << epsilon << endl;
+    cout << "Sedimentation velocity: " << sedv << endl;
+    cout << "Maximum cycles: " << cutoffCycle << endl;
+    cout << "Current cycle: " << accumulated_cycle << endl;
+    if (reversibility) cout << "Reversible: Yes" << endl;
+    else cout << "Reversible: No" << endl;
+    if (lrPeriodic) cout << "Periodic LR: Yes" << endl;
+    else cout << "Periodic LR: No" << endl;
+    if (udPeriodic) cout << "Periodic UD: Yes" << endl;
+    else cout << "Periodic UD: No" << endl;
     cout << "Multithreading: " << NUM_THREADS << endl;
 }
 

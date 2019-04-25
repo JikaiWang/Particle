@@ -16,12 +16,16 @@ int main(int argc, const char *argv[]) {
 //    for (int i = 0; i < 10; ++i) {
 //        active_decay();
 //    }
-    active_decay();
-//    suspension system1;
+//    active_decay();
+    suspension system1;
+//    system1.printInfo();
+//    system1.fraction = 0.4;
 //    system1.generateNew();
+//    system1.evolve();
+    
     
 //    cout << system1.fraction << endl;
-//    system1.evolve();
+    
 //    system1.exportPosition();
 //    system1.varianceNum();
 //    system1.structuralFactor();

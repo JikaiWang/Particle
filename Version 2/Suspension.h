@@ -4,11 +4,20 @@
 #define Suspension_H
 
 #define NUM_THREADS 1
+#define NUM_MOV_AVG_BASE 200000
+#define NUM_MOV_AVG_CURR 100000
+#define T_INTERVAL 100
 
 #include "Basics.h"
 #include "Render.hpp"
 #include "Export.hpp"
+
+#ifdef __linux__
+#define CLUSTER true
+#else
+#define CLUSTER false
 #include "VideoWriter.hpp"
+#endif
 
 
 class suspension
@@ -18,19 +27,22 @@ public:
 	~suspension();
 
 	// parameters
-	double fraction = 0.378;
+	double fraction = 0.437;
     double gamma = 0.0;
-	double epsilon = 0.5;
+	double epsilon = 0.1;
     double diameter = 1.0;
 	bool lrPeriodic = true;
 	bool udPeriodic = true;
     bool initialOverlap = true;
 	double sys_w = 100;
 	double sys_h = 100;
-    double cellsize = 4; //Griding unit size
+    double cellsize = 1; //Griding unit size
 	double sedv = 0.0;
-	int cutoffCycle = 100;
+	int cutoffCycle = 2000000;
+    int cutoffMeasurement = 10000;
     double top_blank = 0.0;
+    double fact = 0.0;
+    double var = 0.0;
 
     //Status
 	int accumulated_cycle = 0;
