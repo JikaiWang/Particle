@@ -1,20 +1,23 @@
 #include "Suspension.h"
 
-suspension::suspension()
-{
+suspension::suspension(){
     cout << "Instance initialized, waiting for parameters..." << endl;
 }
 
-
-suspension::~suspension()
-{
+suspension::~suspension(){
     cout << "Instance destroyed" << endl;
 }
 
-void suspension::loadConfig()
-{
+void suspension::loadConfig(){
     ;
 }
+
+void suspension::updateInternalParam(){
+    width = int(sys_w / cellsize);
+    height = int(sys_h / cellsize);
+}
+
+
 
 void suspension::generateNew()
 {
@@ -120,17 +123,19 @@ void suspension::generateNew()
     cout << num << " particles generated" << endl;
 }
 
+
+
 void suspension::evolve()
 {
-    char filename[50];
+	char filename[50];
     chrono::system_clock sys_time;
     auto in_time_t = std::chrono::system_clock::to_time_t(sys_time.now());
-    sprintf(filename, "./output/fact %ld.txt", in_time_t);
+    sprintf(filename, "./output/ft_%f_%f_%f_%f_%f_%ld.txt", sys_w, sys_h, gamma, fraction, epsilon, in_time_t);
     ofstream out;
     out.open(filename);
-    
-    
-    
+    out.precision(17);
+   
+    updateInternalParam();
     auto start_t = timer.now();
     cout << "Start evolving..." << endl;
 
@@ -152,7 +157,13 @@ void suspension::evolve()
     random_device rd;
     mt19937 gen(rd());
     uniform_real_distribution<> dis(0, 1);
-
+    
+    // Prepare the extended x,y coordinates
+    for (auto par = particle.begin(); par != particle.end(); ++par) {
+        par->x_ext = par->x;
+        par->y_ext = par->y;
+    }
+    
     while ((active_portion > 0 || sedv > 0) && cycle < cutoffCycle && avg_count < cutoffMeasurement) {
 
         // Wait for rendering
@@ -241,6 +252,8 @@ void suspension::evolve()
                 angle = dis(gen) * 2 * M_PI;
                 par->x += disp * cos(angle);
                 par->y += disp * sin(angle);
+                par->x_ext += disp * cos(angle);
+                par->y_ext += disp * sin(angle);
             }
         }
 
@@ -309,22 +322,18 @@ void suspension::evolve()
                 steady = true;
             }
         }
+		
+		// output fact
+    	if (out && (cycle%1000 == 0)) {
+			out << cycle << '\t';
+			out << active_portion << endl;
+    	}
         
-        
-        //////////////////////////////////////// DEBUG START
-        if (out and cycle%T_INTERVAL == 0) {
-            out.precision(17);
-            out << cycle << '\t';
-            out << active_portion << '\t';
-            out << moving_avg_base << '\t';
-            out << moving_avg_curr << '\t';
-            out << avg_fact <<'\t';
-            out << avg_fact2 - avg_fact * avg_fact << endl;
+        if (!CLUSTER)
+        {
+        cout << '\r' << cycle << '\t' << int(active_portion * 100) << "%   " << flush;
         }
-        //////////////////////////////////////// DEBUG END
-        
-        
-        cout << '\r' << ++cycle << '\t' << int(active_portion * 100) << "%   " << flush;
+        ++cycle;
 
         pauseforShear = false;
 
@@ -337,8 +346,8 @@ void suspension::evolve()
     accumulated_cycle += cycle;
     
     // Gather statistical data
-    var = avg_fact2 - avg_fact * avg_fact;
     fact = avg_fact;
+    var = avg_fact2 - avg_fact * avg_fact;
     
     delete[] grid;
 
@@ -356,9 +365,8 @@ void suspension::evolve()
     cout << "Elapsed: ";
     cout << chrono::duration_cast<chrono::seconds>(end_t - start_t).count();
     cout << 's' << endl;
-    
-    
-    out.close();
+
+	out.close();
 }
 
 void suspension::printInfo()

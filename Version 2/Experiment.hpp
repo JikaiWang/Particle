@@ -17,4 +17,5 @@ void two_type_particle();
 void density_dist_over_time();
 void active_phi();
 void active_decay();
+void max_reach();
 #endif /* Experiment_hpp */

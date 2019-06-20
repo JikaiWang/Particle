@@ -259,3 +259,8 @@ void active_decay()
         cout << "Cannot open output file" << endl;
     }
 }
+
+void max_reach()
+{
+    ;
+}

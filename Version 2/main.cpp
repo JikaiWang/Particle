@@ -18,10 +18,10 @@ int main(int argc, const char *argv[]) {
 //    }
 //    active_decay();
     suspension system1;
-//    system1.printInfo();
 //    system1.fraction = 0.4;
-//    system1.generateNew();
-//    system1.evolve();
+    system1.generateNew();
+    system1.printInfo();
+    system1.evolve();
     
     
 //    cout << system1.fraction << endl;
