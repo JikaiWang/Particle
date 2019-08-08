@@ -17,13 +17,13 @@ int main(int argc, const char *argv[]) {
 //        active_decay();
 //    }
 //    active_decay();
-    suspension system1;
 //    system1.fraction = 0.4;
-    system1.generateNew();
-    system1.printInfo();
-    system1.evolve();
-    
-    
+//    suspension system1;
+//    system1.generateNew();
+//    system1.evolve();
+    activation_movie_line();
+//    max_reach();
+//    activation_movie_dot();
 //    cout << system1.fraction << endl;
     
 //    system1.exportPosition();

@@ -4,8 +4,8 @@
 #define Suspension_H
 
 #define NUM_THREADS 1
-#define NUM_MOV_AVG_BASE 500000
-#define NUM_MOV_AVG_CURR 250000
+#define NUM_MOV_AVG_BASE 1000000
+#define NUM_MOV_AVG_CURR 500000
 #define T_INTERVAL 50000
 
 #include "Basics.h"
@@ -25,9 +25,9 @@ public:
 	~suspension();
 
 	// parameters
-	double fraction = 0.19;
+    double fraction = 0.38;
     double gamma = 0.0;
-	double epsilon = 5.0;
+	double epsilon = 0.5;
     double diameter = 1.0;
 	bool lrPeriodic = true;
 	bool udPeriodic = true;
@@ -36,7 +36,7 @@ public:
 	double sys_h = 100;
     double cellsize = 1 + int(gamma); //Griding unit size
 	double sedv = 0.0;
-	int cutoffCycle = 10000000;
+	int cutoffCycle = 3000000;
     int cutoffMeasurement = 20;
     double top_blank = 0.0;
     double fact = 0.0;
@@ -45,7 +45,7 @@ public:
     //Status
 	int accumulated_cycle = 0;
 	double active_portion = 1;
-	bool reversibility;
+	bool reversible;
 	int num = 0; //Number of particles
     chrono::high_resolution_clock timer;
     

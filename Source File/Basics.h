@@ -25,13 +25,13 @@ struct par_info
 {
 	double x;
 	double y;
-    double x_ext;
-    double y_ext;
 	int tag;
 	int pretag;
     float accutag = 0.0f;
 	int hash;
     int type = 0;
+    int num_kick = 0;
+    int id;
 };
 
 struct grid_info
@@ -67,6 +67,14 @@ struct less_than_key
 	}
 };
 
+struct less_than_id
+{
+	inline bool operator() (const par_info& par1, const par_info& par2)
+	{
+		return (par1.id < par2.id);
+	}
+};
+
 void cellcheck(
     //check single cell
 	vector<par_info> *particle, 
@@ -75,6 +83,7 @@ void cellcheck(
 	int x, 
 	int HEIGHT,
 	int WIDTH,
+    double cellsize,
     double gamma,
     double diameter);
 
@@ -85,6 +94,7 @@ void batchcheck(
 	grid_info *grid,
 	int HEIGHT,
 	int WIDTH,
+    double cellsize,
 	int lr_adjust, 
 	int ud_adjust,
 	int num_threads,

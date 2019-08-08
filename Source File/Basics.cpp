@@ -10,7 +10,7 @@ int offset(int y, int x, int ydimension, int xdimension)
 
 //check single cell
 void cellcheck(vector<par_info> *particle, grid_info *grid,
-	int y, int x, int HEIGHT, int WIDTH, double gamma, double diameter)
+	int y, int x, int HEIGHT, int WIDTH, double cellsize, double gamma, double diameter)
 {
 //    double testrange[5] = {1.0, 0.95, 0.75, 0.7, 0.5};
 //    double testrange[5] = {1.0, 1.0, 1.0, 1.0, 1.0};
@@ -26,7 +26,19 @@ void cellcheck(vector<par_info> *particle, grid_info *grid,
 		for (int j = 0; j < cell[i].count; ++j)
 			buffer.push_back((*particle)[cell[i].offset + j]);
 	}
-
+    
+    // shift particle near the boundary
+    if (x == WIDTH - 1){
+        for (auto par = buffer.begin(); par != buffer.end(); ++par){
+            if (par->x < 1) par->x += cellsize * double(WIDTH);
+        }
+    }
+    if (y == HEIGHT - 1){
+        for (auto par = buffer.begin(); par != buffer.end(); ++par){
+            if (par->y < 1) par->y += cellsize * double(HEIGHT);
+        }
+    }
+   
 	// Return when no need to check
 	if (buffer.empty()) return; // return when no particle
 	for (auto par = buffer.begin(); par != buffer.end(); ++par)
@@ -56,7 +68,19 @@ void cellcheck(vector<par_info> *particle, grid_info *grid,
 			++par;
 		}
 	}
-
+    
+    // restore particle position near the boundary
+    if (x == WIDTH - 1){
+        for (auto par = buffer.begin(); par != buffer.end(); ++par){
+            if (par->x > cellsize * double(WIDTH)) par->x -= cellsize * double(WIDTH);
+        }
+    }
+    if (y == HEIGHT - 1){
+        for (auto par = buffer.begin(); par != buffer.end(); ++par){
+            if (par->y > cellsize * double(HEIGHT)) par->y -= cellsize * double(HEIGHT);
+        }
+    }
+    
 	// Copy result back
 	auto target = buffer.begin();
 	for (int i = 0; i < 4; ++i) {
@@ -71,6 +95,7 @@ void batchcheck(
 	grid_info *grid,
 	int HEIGHT,
 	int WIDTH,
+    double cellsize,
 	int lr_adjust,
 	int ud_adjust,
 	int num_threads,
@@ -85,6 +110,6 @@ void batchcheck(
 		for (int y = 0; y < height - 1; ++y)
 		{
 			if (x < WIDTH + lr_adjust - 1)
-				cellcheck(particle, grid, y, x, HEIGHT, WIDTH, gamma, diameter);
+				cellcheck(particle, grid, y, x, HEIGHT, WIDTH, cellsize, gamma, diameter);
 		}
 }
