@@ -19,6 +19,9 @@ void active_phi();
 void active_decay();
 void max_reach_dot(double fraction);
 void max_reach_line(double fraction);
+#endif /* Experiment_hpp */
+
+#ifndef __linux__
 void activation_movie_dot();
 void activation_movie_line();
-#endif /* Experiment_hpp */
+#endif

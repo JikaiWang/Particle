@@ -23,6 +23,9 @@ void videoWriter::writeFrame()
     frame = Scalar(255, 255, 255);
     int x;
     int y;
+    double x2;
+    double y2;
+    
     for (auto par = particle->begin(); par != particle->end(); ++par) {
         x = int(ROW * par->x / frameInfo.sys_h);
         y = int(COL * par->y / frameInfo.sys_w);
@@ -31,6 +34,22 @@ void videoWriter::writeFrame()
             circle(frame, Point(x, y), radius, activeColor, 1, LINE_AA);
         } else {
             circle(frame, Point(x, y), radius, inactiveColor, 1, LINE_AA);
+        }
+        
+        if ((par->x < 0.5) || (par->y < 0.5) || (par->x > frameInfo.sys_w - 0.5) || (par->y < frameInfo.sys_h > 0.5)) {
+            x2 = par->x;
+            y2 = par->y;
+            if (par->x < 0.5) x2 += frameInfo.sys_w;
+            if (par->y < 0.5) y2 += frameInfo.sys_h;
+            if (par->x > frameInfo.sys_w - 0.5) x2 -= frameInfo.sys_w;
+            if (par->y > frameInfo.sys_h - 0.5) y2 -= frameInfo.sys_h;
+            x = int(ROW * x2 / frameInfo.sys_w);
+            y = int(COL * y2 / frameInfo.sys_h);
+            if (par->num_kick != 0){
+                circle(frame, Point(x, y), radius, activeColor, 1, LINE_AA);
+            } else {
+                circle(frame, Point(x, y), radius, inactiveColor, 1, LINE_AA);
+            }
         }
     }
     writer.write(frame);

@@ -32,8 +32,8 @@ public:
 	bool lrPeriodic = true;
 	bool udPeriodic = true;
     bool initialOverlap = true;
-	double sys_w = 100;
-	double sys_h = 100;
+	double sys_w = 10;
+	double sys_h = 10;
     double cellsize = 1 + int(gamma); //Griding unit size
 	double sedv = 0.0;
 	int cutoffCycle = 3000000;

@@ -267,6 +267,7 @@ void max_reach_dot(double fraction)
 	int time_settle;
 	int random_index;
 	double maximum_reach;
+    double SS_dist;
 	double disp;
 	double dist;
 	double angle;
@@ -310,6 +311,7 @@ void max_reach_dot(double fraction)
 		total_active = 0;
 		time_settle = 0;
 		maximum_reach = 0.0;
+        SS_dist = 0.0;
 
 		// perturb a particle
 		system.particle = buffer;
@@ -349,6 +351,7 @@ void max_reach_dot(double fraction)
 				total_active += 1;
 				dist = (par->x - system.sys_w / 2.0) * (par->x - system.sys_w / 2.0)
 					+ (par->y - system.sys_h / 2.0) * (par->y - system.sys_h / 2.0);
+                SS_dist += dist;
 				dist = sqrt(dist);
 				if (dist > maximum_reach) {
 					maximum_reach = dist;
@@ -356,10 +359,11 @@ void max_reach_dot(double fraction)
 			}
 			total_kicks += par->num_kick;
 		}
-		out1 << total_kicks << '\t';
-		out1 << total_active << '\t';
-		out1 << time_settle << '\t';
-		out1 << maximum_reach << endl;
+        out1 << total_kicks << '\t';
+        out1 << total_active << '\t';
+        out1 << time_settle << '\t';
+        out1 << maximum_reach << '\t';
+        out1 << sqrt(SS_dist / double(total_active)) << endl;
 	}
 	out1.close();
 }
@@ -371,6 +375,7 @@ void max_reach_line(double fraction)
 	int time_settle;
 	int random_index;
 	double maximum_reach;
+    double SS_dist;
 	double disp;
 	double dist;
 	double angle;
@@ -415,6 +420,7 @@ void max_reach_line(double fraction)
 		total_active = 0;
 		time_settle = 0;
 		maximum_reach = 0.0;
+        SS_dist = 0.0;
 		system.particle = buffer;
 
 		// perturb a line of particles
@@ -452,6 +458,7 @@ void max_reach_line(double fraction)
 			if (par->num_kick > 0) {
 				total_active += 1;
 				dist = abs(par->y - system.sys_h / 2.0);
+                SS_dist += dist*dist;
 				if (dist > maximum_reach) {
 					maximum_reach = dist;
 				}
@@ -461,10 +468,13 @@ void max_reach_line(double fraction)
 		out1 << total_kicks << '\t';
 		out1 << total_active << '\t';
 		out1 << time_settle << '\t';
-		out1 << maximum_reach << endl;
-	}
+        out1 << maximum_reach << '\t';
+        out1 << sqrt(SS_dist / double(total_active)) << endl;
+	}    
 	out1.close();
 }
+
+#ifndef __linux__
 
 void activation_movie_dot()
 {
@@ -595,3 +605,4 @@ void activation_movie_line()
 		writer.writeFrame();
 	}
 }
+#endif

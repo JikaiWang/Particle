@@ -105,6 +105,8 @@ void GenCircle()
 void RenderFunction()
 {
     frame_count++;
+    double x;
+    double y;
     
     i = 0;
     *pauseforRender = true;
@@ -119,6 +121,25 @@ void RenderFunction()
         Colors[i++] = par->type / 4.0f;
         Colors[i++] = 1 - par->accutag;
         Colors[i++] = 1.0f - par->type / 4.0f;
+        
+        // show particle near the boundary on both side
+        if ((par->x < 0.5) || (par->y < 0.5) || (par->x > sys_w - 0.5) || (par->y < sys_h > 0.5)) {
+            x = par->x;
+            y = par->y;
+            if (par->x < 0.5) x += sys_w;
+            if (par->y < 0.5) y += sys_h;
+            if (par->x > sys_w - 0.5) x -= sys_w;
+            if (par->y > sys_h - 0.5) x += sys_h;
+            Positions[i++] = 4 * x / sys_w - 2;
+            Positions[i++] = 4 * y / sys_h - 2;
+            Positions[i++] = 0.0f;
+            Positions[i++] = 1.0f;
+            i -= 4;
+            Colors[i++] = par->accutag;
+            Colors[i++] = par->type / 4.0f;
+            Colors[i++] = 1 - par->accutag;
+            Colors[i++] = 1.0f - par->type / 4.0f;
+        }
     }
     *pauseforRender = false;
     
