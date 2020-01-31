@@ -21,21 +21,26 @@ int main(int argc, const char *argv[]) {
 //    suspension system1;
 //    system1.generateNew();
 //    system1.evolve();
-    activation_movie_line();
+//    activation_movie_line();
+//    phi_c();
 //    max_reach();
 //    activation_movie_dot();
 //    cout << system1.fraction << endl;
-    
+//    activation_movie_line();
 //    system1.exportPosition();
 //    system1.varianceNum();
 //    system1.structuralFactor();
     
-    
-//    videoWriter video(&system1.particle, &system1.renderInfo);
-//    for (int i = 0; i < 10; ++i) {
-//        video.writeFrame();
-//        system1.evolve();
-//    }
+    // Export video sample
+    suspension system1;
+    system1.generateNew();
+    system1.updateInternalParam();
+    videoWriter video(&system1.particle, &system1.renderInfo);
+    for (int i = 0; i < 100; ++i) {
+        video.writeFrame();
+        system1.evolve();
+    }
+//    ExportPosition(&system1.particle);
 //    system1.exportDensityXY();
 //    system1.varianceNum();
 //    system1.exportVariance();

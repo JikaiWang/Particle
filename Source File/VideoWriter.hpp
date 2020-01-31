@@ -12,6 +12,7 @@
 #define ROW 1000
 #define COL 1000
 #define RADIUS 1
+#define THICKNESS 1
 
 #include <opencv2/core.hpp>
 #include <opencv2/videoio.hpp>

@@ -19,6 +19,7 @@ void active_phi();
 void active_decay();
 void max_reach_dot(double fraction);
 void max_reach_line(double fraction);
+void phi_c();
 #endif /* Experiment_hpp */
 
 #ifndef __linux__

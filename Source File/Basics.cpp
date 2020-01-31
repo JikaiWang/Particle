@@ -10,7 +10,7 @@ int offset(int y, int x, int ydimension, int xdimension)
 
 //check single cell
 void cellcheck(vector<par_info> *particle, grid_info *grid,
-	int y, int x, int HEIGHT, int WIDTH, double cellsize, double gamma, double diameter)
+	int y, int x, int HEIGHT, int WIDTH, double cellsizeY, double cellsizeX, double sys_h, double sys_w, double gamma, double diameter)
 {
 //    double testrange[5] = {1.0, 0.95, 0.75, 0.7, 0.5};
 //    double testrange[5] = {1.0, 1.0, 1.0, 1.0, 1.0};
@@ -20,7 +20,7 @@ void cellcheck(vector<par_info> *particle, grid_info *grid,
 	vector<par_info> buffer; // Partilce to test
 	grid_info cell[4]; // adjacent cells
 
-					   // Load cells
+    // Load cells
 	for (int i = 0; i < 4; ++i) {
 		cell[i] = grid[offset(y + i / 2, x + i % 2, HEIGHT, WIDTH)];
 		for (int j = 0; j < cell[i].count; ++j)
@@ -30,12 +30,12 @@ void cellcheck(vector<par_info> *particle, grid_info *grid,
     // shift particle near the boundary
     if (x == WIDTH - 1){
         for (auto par = buffer.begin(); par != buffer.end(); ++par){
-            if (par->x < 1) par->x += cellsize * double(WIDTH);
+            if (par->x < cellsizeX) par->x += sys_w;
         }
     }
     if (y == HEIGHT - 1){
         for (auto par = buffer.begin(); par != buffer.end(); ++par){
-            if (par->y < 1) par->y += cellsize * double(HEIGHT);
+            if (par->y < cellsizeY) par->y += sys_h;
         }
     }
    
@@ -67,17 +67,18 @@ void cellcheck(vector<par_info> *particle, grid_info *grid,
 //            }
 			++par;
 		}
+
 	}
     
     // restore particle position near the boundary
     if (x == WIDTH - 1){
         for (auto par = buffer.begin(); par != buffer.end(); ++par){
-            if (par->x > cellsize * double(WIDTH)) par->x -= cellsize * double(WIDTH);
+            if (par->x > sys_w) par->x -= sys_w;
         }
     }
     if (y == HEIGHT - 1){
         for (auto par = buffer.begin(); par != buffer.end(); ++par){
-            if (par->y > cellsize * double(HEIGHT)) par->y -= cellsize * double(HEIGHT);
+            if (par->y > sys_h) par->y -= sys_h;
         }
     }
     
@@ -95,7 +96,10 @@ void batchcheck(
 	grid_info *grid,
 	int HEIGHT,
 	int WIDTH,
-    double cellsize,
+    double cellsizeY,
+    double cellsizeX,
+    double sys_h,
+    double sys_w,
 	int lr_adjust,
 	int ud_adjust,
 	int num_threads,
@@ -110,6 +114,6 @@ void batchcheck(
 		for (int y = 0; y < height - 1; ++y)
 		{
 			if (x < WIDTH + lr_adjust - 1)
-				cellcheck(particle, grid, y, x, HEIGHT, WIDTH, cellsize, gamma, diameter);
+				cellcheck(particle, grid, y, x, HEIGHT, WIDTH, cellsizeY, cellsizeX, sys_h, sys_w, gamma, diameter);
 		}
 }

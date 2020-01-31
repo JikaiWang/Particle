@@ -597,12 +597,92 @@ void activation_movie_line()
         if (par->y < 0) par->y += system.sys_h;
         if (par->y > system.sys_h) par->y -= system.sys_h;
     }
+    for (auto par = buffer.begin(); par != buffer.end(); ++par) {
+        par->y -= rand_y - system.sys_h / 2.0;
+        par->num_kick = 0;
+        if (par->y < 0) par->y += system.sys_h;
+        if (par->y > system.sys_h) par->y -= system.sys_h;
+    }
 
 	system.cutoffCycle = 1;
 	videoWriter writer(&(system.particle), &(system.renderInfo));
 	while (system.active_portion > 0) {
 		system.evolve();
 		writer.writeFrame();
+        sort(system.particle.begin(), system.particle.end(), less_than_id());
+        for (int i = 0; i < system.num; ++i){
+            buffer.at(i).num_kick += system.particle.at(i).num_kick;
+        }
 	}
+    
+    char filename[50];
+    chrono::system_clock sys_time;
+    ofstream out2;
+    out2.precision(17);
+    auto in_time_t = std::chrono::system_clock::to_time_t(sys_time.now());
+    sprintf(filename, "./posidiff_%f_%f_%f_%f_%f_%f_%ld.txt", system.sys_w, system.sys_h, system.gamma, system.fraction, system.epsilon, system.sedv, in_time_t);
+    out2.open(filename);
+    out2 << system.accumulated_cycle << endl;
+    sort(system.particle.begin(), system.particle.end(), less_than_id());
+    sort(buffer.begin(), buffer.end(), less_than_id());
+    for (int i = 0; i < system.num; ++i)
+    {
+        out2 << buffer.at(i).x << '\t';
+        out2 << buffer.at(i).y << '\t';
+        out2 << system.particle.at(i).x << '\t';
+        out2 << system.particle.at(i).y << '\t';
+        out2 << buffer.at(i).num_kick << endl;
+    }
+    out2.close();
+    this_thread::sleep_for(chrono::seconds(1));
 }
+
+
+void phi_c()
+{
+    // binary search
+    int num_trial = 5;
+    bool pass;
+    double left = 0.001;
+    double right = 0.6;
+    
+    suspension system;
+    system.generateNew();
+    int N = system.num;
+    system.top_blank = 0.0;
+    system.cutoffCycle = 100000;
+    
+    char filename[50];
+    chrono::system_clock sys_time;
+    ofstream out2;
+    out2.precision(4);
+    auto in_time_t = std::chrono::system_clock::to_time_t(sys_time.now());
+    sprintf(filename, "./phic_%f_%f_%f_%f_%f_%f_%ld.txt", system.sys_w, system.sys_h, system.gamma, system.fraction, system.epsilon, system.sedv, in_time_t);
+    out2.open(filename);
+    
+    while (right - left > 0.001)
+    {
+        pass = false;
+        system.fraction = 0.5 * (left + right);
+        out2 << system.fraction << endl;
+        system.sys_h = N * M_PI * 0.25 / (system.fraction * system.sys_w);
+        cout << system.sys_h << endl;
+        system.generateNew();
+        for (int i = 0; i < num_trial; ++i)
+        {
+            system.evolve();
+            if (system.reversible){
+                pass = true;
+                break;
+            }
+            if (system.active_portion > 0.3) break;
+        }
+        if (pass) left = system.fraction;
+        if (!pass) right = system.fraction;
+    }
+    out2 << left << endl;
+    out2.close();
+}
+
+
 #endif

@@ -50,6 +50,8 @@ struct render_info
 {
 	double sys_w;
 	double sys_h;
+    double cellsizeX;
+    double cellsizeY;
 	bool *p_pauseforRender;
 	bool *p_pauseforShear;
 	bool *p_pause;
@@ -83,7 +85,10 @@ void cellcheck(
 	int x, 
 	int HEIGHT,
 	int WIDTH,
-    double cellsize,
+    double cellsizeY,
+    double cellsizeX,
+    double sys_h,
+    double sys_w,
     double gamma,
     double diameter);
 
@@ -94,7 +99,10 @@ void batchcheck(
 	grid_info *grid,
 	int HEIGHT,
 	int WIDTH,
-    double cellsize,
+    double cellsizeY,
+    double cellsizeX,
+    double sys_h,
+    double sys_w,
 	int lr_adjust, 
 	int ud_adjust,
 	int num_threads,

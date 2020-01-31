@@ -15,8 +15,13 @@ void suspension::loadConfig() {
 void suspension::updateInternalParam() {
 	width = int(sys_w / cellsize);
 	height = int(sys_h / cellsize);
+    cellSizeX = sys_w / double(width);
+    cellSizeY = sys_h / double(height);
+    renderInfo.sys_w = sys_w;
+    renderInfo.sys_h = sys_h;
+    renderInfo.cellsizeX = cellSizeX;
+    renderInfo.cellsizeY = cellSizeY;
 }
-
 
 
 void suspension::generateNew()
@@ -132,20 +137,21 @@ void suspension::evolve()
 	updateInternalParam();
 	auto start_t = timer.now();
 	cout << "Start evolving..." << endl;
+    cout << width << ' ' << height << endl;
 
 	grid_info *grid = new grid_info[width * height];
 	int count;
 	int pre_hash;
 	int cycle = 0;
-	int id;
 	double avg_count = 0.0f;
 	double avg_fact = 0.0f;
 	double avg_fact2 = 0.0f;
-	bool steady = false;
 	double moving_avg_base = 0.0f;
 	double moving_avg_curr = 0.0f;
 	double *moving_queue_base = new double[NUM_MOV_AVG_BASE];
 	double *moving_queue_curr = new double[NUM_MOV_AVG_CURR];
+    bool steady = false;
+
 	for (size_t i = 0; i < NUM_MOV_AVG_BASE; i++) {
 		moving_queue_base[i] = 0.0;
 	}
@@ -159,7 +165,7 @@ void suspension::evolve()
 	mt19937 gen(rd());
 	uniform_real_distribution<> dis(0, 1);
 
-	// Initialization for recording of number of random icks
+	// Initialization for recording of number of random kicks
 	active_portion = 1;
 	for (auto par = particle.begin(); par != particle.end(); ++par) {
 		par->num_kick = 0;
@@ -225,7 +231,10 @@ void suspension::evolve()
 					grid,
                     height,
                     width,
-                    cellsize,
+                    cellSizeY,
+                    cellSizeX,
+                    sys_h,
+                    sys_w,
 					lr_adjust,
 					ud_adjust,
 					NUM_THREADS,
@@ -242,7 +251,7 @@ void suspension::evolve()
 			//single core safe version
 			for (int y = 0; y < height + ud_adjust - 1; ++y)
 				for (int x = 0; x < width + lr_adjust - 1; ++x)
-					cellcheck(&particle, grid, y, x, height, width, cellsize, gamma, diameter);
+					cellcheck(&particle, grid, y, x, height, width, cellSizeY, cellSizeX, sys_h, sys_w, gamma, diameter);
 		}
 
 
