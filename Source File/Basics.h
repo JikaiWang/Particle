@@ -31,6 +31,7 @@ struct par_info
 	int hash;
     int type = 0;
     int num_kick = 0;
+    double connectivity = 0;
     int id;
 };
 

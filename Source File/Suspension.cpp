@@ -137,7 +137,6 @@ void suspension::evolve()
 	updateInternalParam();
 	auto start_t = timer.now();
 	cout << "Start evolving..." << endl;
-    cout << width << ' ' << height << endl;
 
 	grid_info *grid = new grid_info[width * height];
 	int count;

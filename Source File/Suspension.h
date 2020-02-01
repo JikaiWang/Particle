@@ -38,7 +38,7 @@ public:
 	double sedv = 0.0;
 	int cutoffCycle = 1;
     int cutoffMeasurement = 20;
-    double top_blank = 0.0;
+    double top_blank = 0.2;
     double fact = 0.0;
     double var = 0.0;
 

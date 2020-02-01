@@ -43,7 +43,7 @@ void distri_over_time()
 
 	mkdir("output", 0777);
 
-	char filename[50];
+	char filename[100];
 	auto in_time_t = std::chrono::system_clock::to_time_t(sys_time.now());
 	sprintf(filename, "./output/fronts %ld.txt", in_time_t);
 	ofstream out;
@@ -74,7 +74,7 @@ void activation_with_phi()
 {
 	mkdir("output", 0777);
 	chrono::system_clock sys_time;
-	char filename[50];
+	char filename[100];
 	auto in_time_t = std::chrono::system_clock::to_time_t(sys_time.now());
 	sprintf(filename, "output/activation %ld.txt", in_time_t);
 	ofstream out;
@@ -213,7 +213,7 @@ void active_phi()
 		system.generateNew();
 		system.evolve();
 	}
-	char filename[50];
+	char filename[100];
 	chrono::system_clock sys_time;
 	auto in_time_t = std::chrono::system_clock::to_time_t(sys_time.now());
 	sprintf(filename, "./output/fact %ld.txt", in_time_t);
@@ -240,7 +240,7 @@ void active_decay()
 	// measure 100 times ==> 100*cutoffCycle
 	suspension system;
 	system.generateNew();
-	char filename[50];
+	char filename[100];
 	chrono::system_clock sys_time;
 	auto in_time_t = std::chrono::system_clock::to_time_t(sys_time.now());
 	sprintf(filename, "./output/actdecay %ld.txt", in_time_t);
@@ -272,7 +272,7 @@ void max_reach_dot(double fraction)
 	double dist;
 	double angle;
 	double x, y;
-	char filename[50];
+	char filename[100];
 	chrono::system_clock sys_time;
 	ofstream out1;
 	ofstream out2;
@@ -381,7 +381,7 @@ void max_reach_line(double fraction)
 	double angle;
 	double x, y;
 	double rand_y;
-	char filename[50];
+	char filename[100];
 	chrono::system_clock sys_time;
 	ofstream out1;
 	ofstream out2;
@@ -473,6 +473,57 @@ void max_reach_line(double fraction)
 	}    
 	out1.close();
 }
+
+
+void phi_c(double sys_w, double sys_h, double epsilon, double fraction)
+{
+    // binary search
+    int num_trial = 5;
+    bool pass;
+    double left = 0.001;
+    double right = 0.6;
+    
+    suspension system;
+    system.fraction = fraction;
+    system.epsilon = epsilon;
+    system.sys_w = sys_w;
+    system.sys_h = sys_h;
+    system.generateNew();
+    int N = system.num;
+    system.top_blank = 0.0;
+    system.cutoffCycle = 10000;
+    
+    char filename[100];
+    chrono::system_clock sys_time;
+    ofstream out2;
+    out2.precision(4);
+    auto in_time_t = std::chrono::system_clock::to_time_t(sys_time.now());
+    sprintf(filename, "./output/phic_%f_%f_%f_%f_%f_%f_%ld.txt", system.sys_w, system.sys_h, system.gamma, system.fraction, system.epsilon, system.sedv, in_time_t);
+    out2.open(filename);
+    
+    while (right - left > 0.001)
+    {
+        pass = false;
+        system.fraction = 0.5 * (left + right);
+        out2 << system.fraction << endl;
+        system.sys_h = N * M_PI * 0.25 / (system.fraction * system.sys_w);
+        system.generateNew();
+        for (int i = 0; i < num_trial; ++i)
+        {
+            system.evolve();
+            if (system.reversible){
+                pass = true;
+                break;
+            }
+            if (system.active_portion > 0.3) break;
+        }
+        if (pass) left = system.fraction;
+        if (!pass) right = system.fraction;
+    }
+    out2 << left << endl;
+    out2.close();
+}
+
 
 #ifndef __linux__
 
@@ -637,52 +688,6 @@ void activation_movie_line()
     this_thread::sleep_for(chrono::seconds(1));
 }
 
-
-void phi_c()
-{
-    // binary search
-    int num_trial = 5;
-    bool pass;
-    double left = 0.001;
-    double right = 0.6;
-    
-    suspension system;
-    system.generateNew();
-    int N = system.num;
-    system.top_blank = 0.0;
-    system.cutoffCycle = 100000;
-    
-    char filename[50];
-    chrono::system_clock sys_time;
-    ofstream out2;
-    out2.precision(4);
-    auto in_time_t = std::chrono::system_clock::to_time_t(sys_time.now());
-    sprintf(filename, "./phic_%f_%f_%f_%f_%f_%f_%ld.txt", system.sys_w, system.sys_h, system.gamma, system.fraction, system.epsilon, system.sedv, in_time_t);
-    out2.open(filename);
-    
-    while (right - left > 0.001)
-    {
-        pass = false;
-        system.fraction = 0.5 * (left + right);
-        out2 << system.fraction << endl;
-        system.sys_h = N * M_PI * 0.25 / (system.fraction * system.sys_w);
-        cout << system.sys_h << endl;
-        system.generateNew();
-        for (int i = 0; i < num_trial; ++i)
-        {
-            system.evolve();
-            if (system.reversible){
-                pass = true;
-                break;
-            }
-            if (system.active_portion > 0.3) break;
-        }
-        if (pass) left = system.fraction;
-        if (!pass) right = system.fraction;
-    }
-    out2 << left << endl;
-    out2.close();
-}
 
 
 #endif

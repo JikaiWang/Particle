@@ -22,7 +22,52 @@ int main(int argc, const char *argv[]) {
 //    system1.generateNew();
 //    system1.evolve();
 //    activation_movie_line();
-//    phi_c();
+
+    struct info
+    {
+        double sys_w;
+        double sys_h;
+        double epsilon;
+        double fraction;
+    };
+
+    info param[27];
+    param[0]  = (info){20,    200,    0.5,    0.3};
+    param[1]  = (info){100,    400,    5,        0.125};
+    param[2]  = (info){10,    100,    0.05,    0.36};
+    param[3]  = (info){10,    100,    0.5,    0.3};
+    param[4]  = (info){20,    200,    0.5,    0.1};
+    param[5]  = (info){20,    200,    0.5,    0.2};
+    param[6]  = (info){1000,20,        0.5,    0.25};
+    param[7]  = (info){500,    100,    5,        0.125};
+    param[8]  = (info){200,    15,        0.05,    0.275};
+    param[9]  = (info){100,    20,        0.5,    0.25};
+    param[10] = (info){10,    20,        0.5,    0.25};
+    param[11] = (info){500,    100,    5,        0.125};
+    param[12] = (info){20,    200,    0.5,    0.3};
+    param[13] = (info){100,    400,    5,        0.125};
+    param[14] = (info){10,    100,    0.05,    0.36};
+    param[15] = (info){10,    100,    0.5,    0.3};
+    param[16] = (info){20,    200,    0.5,    0.1};
+    param[17] = (info){20,    200,    0.5,    0.2};
+    param[18] = (info){100,    20,        0.5,    0.25};
+    param[19] = (info){100,    400,    4,        0.19};
+    param[20] = (info){100,    400,    3,        0.21};
+    param[21] = (info){100,    300,    2,        0.25};
+    param[22] = (info){100,    200,    1,        0.3};
+    param[23] = (info){20,    200,    0.5,    0.34};
+    param[24] = (info){100,    400,    10,        0.05};
+    param[25] = (info){100,    200,    1,        0.3};
+    param[26] = (info){100,    400,    10,        0.05};
+
+    for (int i = 1; i < 27; ++i){
+        phi_c(param[i].sys_w,
+              param[i].sys_h,
+              param[i].epsilon,
+              param[i].fraction);
+    }
+
+    return 0;
 //    max_reach();
 //    activation_movie_dot();
 //    cout << system1.fraction << endl;
@@ -32,14 +77,14 @@ int main(int argc, const char *argv[]) {
 //    system1.structuralFactor();
     
     // Export video sample
-    suspension system1;
-    system1.generateNew();
-    system1.updateInternalParam();
-    videoWriter video(&system1.particle, &system1.renderInfo);
-    for (int i = 0; i < 100; ++i) {
-        video.writeFrame();
-        system1.evolve();
-    }
+//    suspension system1;
+//    system1.generateNew();
+//    system1.updateInternalParam();
+//    videoWriter video(&system1.particle, &system1.renderInfo);
+//    for (int i = 0; i < 100; ++i) {
+//        video.writeFrame();
+//        system1.evolve();
+//    }
 //    ExportPosition(&system1.particle);
 //    system1.exportDensityXY();
 //    system1.varianceNum();
