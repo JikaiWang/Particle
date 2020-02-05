@@ -12,7 +12,7 @@ chrono::system_clock sys_time;
 
 void ExportPosition(vector<par_info> *particle)
 {
-    char filename [50];
+    char filename [100];
     auto in_time_t = std::chrono::system_clock::to_time_t(sys_time.now());
     sprintf (filename, "./Position %ld.txt", in_time_t);
     ofstream out;

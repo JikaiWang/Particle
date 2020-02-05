@@ -12,7 +12,7 @@ int frame_time;
 int base_time;
 int frame_count = 0;
 int CurrentWidth;
-int CurrentHeight = 800;
+int CurrentHeight = 2000;
 int WindowHandle = 0;
 int num_Vertex;
 int num;
@@ -123,7 +123,7 @@ void RenderFunction()
         Colors[i++] = 1.0f - par->type / 4.0f;
         
         // show particle near the boundary on both side
-        if ((par->x < 0.5) || (par->y < 0.5) || (par->x > sys_w - 0.5) || (par->y < sys_h > 0.5)) {
+        /*if ((par->x < 0.5) || (par->y < 0.5) || (par->x > sys_w - 0.5) || (par->y < sys_h > 0.5)) {
             x = par->x;
             y = par->y;
             if (par->x < 0.5) x += sys_w;
@@ -139,7 +139,7 @@ void RenderFunction()
             Colors[i++] = par->type / 4.0f;
             Colors[i++] = 1 - par->accutag;
             Colors[i++] = 1.0f - par->type / 4.0f;
-        }
+        }*/
     }
     *pauseforRender = false;
     
@@ -362,13 +362,38 @@ void initRenderer(render_info renderInfo)
     
     char *myargv[1];
     int myargc = 1;
-    myargv[0] = strdup("Myappname");
+
+	#ifdef _WIN32
+	myargv[0] = _strdup("Myappname");
+	#endif
+	#ifdef __APPLE__
+	myargv[0] = strdup("Myappname");
+	#endif
     
     glutInit(&myargc, myargv);
     
+
+	#ifdef _WIN32
+	glutInitContextVersion(4, 1);
+	glutInitContextFlags(GLUT_FORWARD_COMPATIBLE);
+	glutInitContextProfile(GLUT_CORE_PROFILE);
+
+	glutSetOption(
+		GLUT_ACTION_ON_WINDOW_CLOSE,
+		GLUT_ACTION_CONTINUE_EXECUTION
+	);
+	#endif
+
     glutInitWindowPosition(-1, -1);
     glutInitWindowSize(CurrentWidth, CurrentHeight);
-    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_MULTISAMPLE | GLUT_3_2_CORE_PROFILE);
+
+	#ifdef __APPLE__
+	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_MULTISAMPLE | GLUT_3_2_CORE_PROFILE);
+	#endif
+
+	#ifdef _WIN32
+	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_MULTISAMPLE);
+	#endif
     
     WindowHandle = glutCreateWindow(WINDOW_TITLE_PREFIX);
     
@@ -386,9 +411,23 @@ void initRenderer(render_info renderInfo)
     glutTimerFunc(0, TimerFunction, 0);
     glutWMCloseFunc(Cleanup);
     glutKeyboardFunc(processNormalKeys);
-    
-    CreateShaders();
-    CreateVBO();
+
+	#ifdef _WIN32
+	GLenum GlewInitResult;
+	GlewInitResult = glewInit();
+
+	if (GLEW_OK != GlewInitResult) {
+		fprintf(
+			stderr,
+			"ERROR: %s/n",
+			glewGetErrorString(GlewInitResult)
+		);
+		exit(EXIT_FAILURE);
+	}
+	#endif
+
+	CreateShaders();
+	CreateVBO();
     
 //    cout << glGetString(GL_VERSION) << endl;
 }

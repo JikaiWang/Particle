@@ -3,7 +3,7 @@
 #ifndef Suspension_H
 #define Suspension_H
 
-#define NUM_THREADS 2
+#define NUM_THREADS 1
 #define NUM_MOV_AVG_BASE 1000000
 #define NUM_MOV_AVG_CURR 500000
 #define T_INTERVAL 50000
@@ -25,20 +25,20 @@ public:
 	~suspension();
 
 	// parameters
-    double fraction = 0.37;
+    double fraction = 0.375;
     double gamma = 0.0;
 	double epsilon = 0.5;
     double diameter = 1.0;
 	bool lrPeriodic = true;
-	bool udPeriodic = false;
+	bool udPeriodic = true;
     bool initialOverlap = true;
-	double sys_w = 10.8;
-    double sys_h = 10.8;
+	double sys_w = 100;
+    double sys_h = 100;
     double cellsize = 1 + int(gamma); //Griding unit size
 	double sedv = 0.0;
-	int cutoffCycle = 1;
+	int cutoffCycle = 1000000;
     int cutoffMeasurement = 20;
-    double top_blank = 0.2;
+    double top_blank = 0.0;
     double fact = 0.0;
     double var = 0.0;
 
@@ -61,8 +61,9 @@ public:
 	render_info renderInfo = {
 		sys_w,
 		sys_h,
-        0,
-        0,
+		0,
+		0,
+		diameter + epsilon,
 		&pauseforRender,
 		&pauseforShear,
 		&pause,
@@ -79,6 +80,7 @@ public:
     void structuralFactor();
     void exportDensityXY();
     void exportPosition();
+	void connectivity();
 
 protected:
 	int width = int(sys_w / cellsize);

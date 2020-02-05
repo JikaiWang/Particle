@@ -13,14 +13,14 @@
 
 #ifdef __APPLE__
 #include <GLUT/glut.h>
-#else
-#include <GL/glut.h>
-#endif
+#elif _WIN32
+#include <GL/glew.h>
+#include <GL/freeglut.h>
+#endif // __APPLE__
 
 #include "Basics.h"
 
 void processNormalKeys(unsigned char key, int x, int y);
-void renderScene();
 void initRenderer(render_info renderInfo);
 void render();
 

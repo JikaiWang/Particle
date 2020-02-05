@@ -399,7 +399,7 @@ void suspension::exportPosition()
 	for (auto par = particle.begin(); par != particle.end(); ++par) {
 		buffer.push_back(to_string(par->x) + " " + to_string(par->y));
 	}
-	char filename[50];
+	char filename[100];
 	chrono::system_clock sys_time;
 	auto in_time_t = std::chrono::system_clock::to_time_t(sys_time.now());
 	sprintf(filename, "./output/position_%f_%f_%f_%f_%f_%ld.txt", sys_w, sys_h, gamma, fraction, epsilon, in_time_t);
@@ -459,7 +459,7 @@ void suspension::varianceNum()
 		buffer.push_back(to_string(log10(par->box_size)) + " " + to_string(log10(par->var)));
 	}
 
-	char filename[50];
+	char filename[100];
 	chrono::system_clock sys_time;
 	auto in_time_t = std::chrono::system_clock::to_time_t(sys_time.now());
 	sprintf(filename, "./output/variance_%f_%f_%f_%f_%f_%ld.txt", sys_w, sys_h, gamma, fraction, epsilon, in_time_t);
@@ -512,7 +512,7 @@ void suspension::structuralFactor()
 		count[int(k[n] * sys_h * 0.5 / M_PI)] += 1.0;
 	}
 
-	char filename[50];
+	char filename[100];
 	chrono::system_clock sys_time;
 	auto in_time_t = std::chrono::system_clock::to_time_t(sys_time.now());
 	sprintf(filename, "./output/sk_%f_%f_%f_%f_%f_%ld.txt", sys_w, sys_h, gamma, fraction, epsilon, in_time_t);
@@ -564,7 +564,7 @@ void suspension::exportDensityXY()
 		buffer.push_back(outputStr);
 	}
 
-	char filename[50];
+	char filename[100];
 	chrono::system_clock sys_time;
 	auto in_time_t = std::chrono::system_clock::to_time_t(sys_time.now());
 	sprintf(filename, "./output/densityXY_%f_%f_%f_%f_%f_%ld.txt", sys_w, sys_h, gamma, fraction, epsilon, in_time_t);
@@ -572,4 +572,53 @@ void suspension::exportDensityXY()
 	std::ostream_iterator<std::string> output_iterator(output_file, "\n");
 	std::copy(buffer.begin(), buffer.end(), output_iterator);
 	delete[] distribution;
+}
+
+void suspension::connectivity()
+{
+	grid_info *grid = new grid_info[width * height];
+	int count;
+	int pre_hash;
+	double pre_cellsize = cellsize;
+
+	// temporally change cellsize
+	cellsize = epsilon + diameter;
+	updateInternalParam();
+	cellsize = pre_cellsize;
+
+	// generate mesh grids
+	for (auto par = particle.begin(); par != particle.end(); ++par) {
+		par->hash = int(par->x / cellSizeX) + int(par->y / cellSizeY) * width;
+		par->connectedNum = 0;
+		par->connectivity = 0.0f;
+	}
+		
+	// Sort by key using radix sort
+	sort(particle.begin(), particle.end(), less_than_key());
+
+	// Get unique count and location
+	for (int i = 0; i < height * width; ++i)
+		grid[i].offset = grid[i].count = 0;
+	pre_hash = particle.begin()->hash;
+	count = 1;
+	grid[pre_hash].offset = 0;
+	for (int i = 1; i < particle.size(); ++i)
+	{
+		if (particle[i].hash == pre_hash) ++count;
+		else {
+			grid[pre_hash].count = count;
+			pre_hash = particle[i].hash;
+			grid[pre_hash].offset = i;
+			count = 1;
+		}
+	}
+	grid[pre_hash].count = count;
+	
+	// main loop
+	if (lrPeriodic) lr_adjust = 1;
+	if (udPeriodic) ud_adjust = 1;
+
+	for (int y = 0; y < height + ud_adjust - 1; ++y)
+		for (int x = 0; x < width + lr_adjust - 1; ++x)
+			connectcheck(&particle, grid, epsilon + diameter, y, x, height, width, cellSizeY, cellSizeX, sys_h, sys_w, gamma, diameter);
 }

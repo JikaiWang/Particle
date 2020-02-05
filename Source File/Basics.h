@@ -19,19 +19,26 @@
 #include <complex>
 #include <cmath>
 
+#ifdef _WIN32
+#define WIN true
+#endif
+
+#define INCREMENT 0.0001
+
 using namespace std;
 
 struct par_info
 {
-	double x;
+	double x; // coordinates
 	double y;
-	int tag;
-	int pretag;
-    float accutag = 0.0f;
-	int hash;
+	int tag; // active
+	int pretag; // active in last cycle
+    float accutag = 0.0f; // for rendering purposes
+	int hash; // hash based on x-y coordinates
     int type = 0;
-    int num_kick = 0;
-    double connectivity = 0;
+    int num_kick = 0; // number of kicks during shear
+    double connectivity = 0; // area fraction of surrounding particles
+	double connectedNum = 0; // number of surrounding particles
     int id;
 };
 
@@ -53,6 +60,7 @@ struct render_info
 	double sys_h;
     double cellsizeX;
     double cellsizeY;
+	double radius;
 	bool *p_pauseforRender;
 	bool *p_pauseforShear;
 	bool *p_pause;
@@ -93,7 +101,6 @@ void cellcheck(
     double gamma,
     double diameter);
 
-
 void batchcheck(
     //Used for multithreading
 	vector<par_info> *particle, 
@@ -111,6 +118,48 @@ void batchcheck(
     double gamma,
     double diameter);
 
+void connectcheck(
+	//check single cell
+	vector<par_info> *particle,
+	grid_info *grid,
+	double radius,
+	int y,
+	int x,
+	int HEIGHT,
+	int WIDTH,
+	double cellsizeY,
+	double cellsizeX,
+	double sys_h,
+	double sys_w,
+	double gamma,
+	double diameter);
 
+struct nodeProperty
+{
+	double connectedNumber;
+	double connectedArea;
+	double clusteringCoefficient = 0;
+	double clusteringCoefficientWeighted = 0;
+	double betweenness = 0;
+	double betweennessWeighted = 0;
+};
+
+class AdjacencyMatrix
+{
+public:
+	double **mat;
+	int dimension;
+	vector<nodeProperty> graph;
+
+	AdjacencyMatrix(int dim);
+	~AdjacencyMatrix();
+
+	void setValue(int i, int j, double value);
+	void addProperty();
+};
+
+double angle(double dist, double diameter, double r);
+double integral(double l, double r, double epsilon, double dist, double diameter, bool flag);
+double probability(double dist, double diameter, double epsilon);
 
 #endif // !Basics_H

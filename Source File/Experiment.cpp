@@ -41,7 +41,9 @@ void distri_over_time()
 
 	chrono::system_clock sys_time;
 
+	#ifndef _WIN32
 	mkdir("output", 0777);
+	#endif
 
 	char filename[100];
 	auto in_time_t = std::chrono::system_clock::to_time_t(sys_time.now());
@@ -72,7 +74,9 @@ void distri_over_time()
 
 void activation_with_phi()
 {
+	#ifndef _WIN32
 	mkdir("output", 0777);
+	#endif
 	chrono::system_clock sys_time;
 	char filename[100];
 	auto in_time_t = std::chrono::system_clock::to_time_t(sys_time.now());
