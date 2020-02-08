@@ -9,8 +9,12 @@
 #ifndef Measurement_hpp
 #define Measurement_hpp
 
-#include "Suspension.h"
+#include "Basics.h"
+#include <complex>
+#include <cmath>
 
-void varianceNum();
+#define STEPS 10.0
+void structuralFactor(render_info *info);
+
 
 #endif /* Measurement_hpp */
