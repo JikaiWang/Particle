@@ -2,6 +2,7 @@
 
 suspension::suspension() {
 	cout << "Instance initialized, waiting for parameters..." << endl;
+    init();  // init grids
 }
 
 suspension::~suspension() {
@@ -12,17 +13,14 @@ void suspension::loadConfig() {
 	;
 }
 
-void suspension::updateInternalParam() {
-	width = int(sys_w / cellsize);
-	height = int(sys_h / cellsize);
-    cellSizeX = sys_w / double(width);
-    cellSizeY = sys_h / double(height);
-    renderInfo.sys_w = sys_w;
-    renderInfo.sys_h = sys_h;
-    renderInfo.cellsizeX = cellSizeX;
-    renderInfo.cellsizeY = cellSizeY;
+void suspension::updateInfo() {
+    Info.sys_w = sys_w;
+    Info.sys_h = sys_h;
+    Info.cellSizeX = cellSizeX;
+    Info.cellSizeY = cellSizeY;
+	Info.diameter = diameter;
+	Info.epsilon = epsilon;
 }
-
 
 void suspension::generateNew()
 {
@@ -48,7 +46,6 @@ void suspension::generateNew()
 			buffer.pretag = 1;
 			buffer.hash = 0;
 			buffer.tag = 0;
-			buffer.id = i;
 			particle.push_back(buffer);
 		}
 	}
@@ -59,14 +56,14 @@ void suspension::generateNew()
 		int index_y;
 		int ix;
 		int iy;
+        double offset_x;
+        double offset_y;
 		par_info buffer;
 		par_info *grid = new par_info[int(sys_w * sys_h * 4)];
 		int current_num = 0;
 		bool overlap;
 		for (int i = 0; i < int(sys_w * sys_h * 4); i++)
-		{
 			grid[i].pretag = 0;
-		}
 		while (current_num < num)
 		{
 			buffer.x = sys_w * dis(gen);
@@ -80,39 +77,38 @@ void suspension::generateNew()
 			overlap = false;
 			for (int x = index_x - 1; x < index_x + 2; x++) {
 				for (int y = index_y - 1; y < index_y + 2; y++) {
+                    offset_x = 0;
+                    offset_y = 0;
 					if (x == -1) {
-						ix = sys_w - 1;
-					}
+                        ix = int(sys_w - 1.0);
+                        offset_x = -sys_w;
+                    }
 					else {
-						ix = x;
-					}
+                        ix = x;
+                    }
 					if (y == -1) {
-						iy = sys_h - 1;
-					}
+                        iy = int(sys_h - 1.0);
+                        offset_y = -sys_h;
+                    }
 					else {
-						iy = y;
-					}
-					index = offset(iy, ix, sys_h, sys_w) * 4;
-					for (int i = 0; i < 4; i++)
-					{
-						if (grid[index + i].pretag == 1)
-						{
-							if ((pow(grid[index + i].x - buffer.x, 2.0)
-								+ pow(grid[index + i].y - buffer.y, 2.0)) < 1.0)
-							{
+                        iy = y;
+                    }
+                    if (x == int(sys_w)) offset_x = sys_w;
+                    if (y == int(sys_h)) offset_y = sys_h;
+					index = offset(iy, ix, int(sys_h), int(sys_w)) * 4;
+					for (int i = 0; i < 4; i++) {
+						if (grid[index + i].pretag == 1) {
+							if ((pow(grid[index + i].x + offset_x - buffer.x, 2.0)
+								+ pow(grid[index + i].y + offset_y - buffer.y, 2.0)) < 1.0)
 								overlap = true;
-							}
 						}
 					}
 				}
 			}
-			if (!overlap)
-			{
+			if (!overlap) {
 				for (int i = (index_x + sys_w * index_y) * 4;
-					i < (index_x + sys_w * index_y + 1) * 4; i++)
-				{
-					if (grid[i].pretag == 0)
-					{
+					i < (index_x + sys_w * index_y + 1) * 4; i++) {
+					if (grid[i].pretag == 0) {
 						grid[i] = buffer;
 						current_num++;
 						break;
@@ -121,9 +117,9 @@ void suspension::generateNew()
 			}
 		}
 		for (int i = 0; i < sys_w * sys_h * 4; i++)
-		{
-			if (grid[i].pretag == 1) particle.push_back(grid[i]);
-		}
+			if (grid[i].pretag == 1) 
+				particle.push_back(grid[i]);
+
 		delete[] grid;
 	}
 
@@ -134,13 +130,12 @@ void suspension::generateNew()
 
 void suspension::evolve()
 {
-	updateInternalParam();
 	auto start_t = timer.now();
 	cout << "Start evolving..." << endl;
-
-	grid_info *grid = new grid_info[width * height];
-	int count;
-	int pre_hash;
+	
+	init();
+	updateInfo();
+	
 	int cycle = 0;
 	double avg_count = 0.0f;
 	double avg_fact = 0.0f;
@@ -166,12 +161,14 @@ void suspension::evolve()
 
 	// Initialization for recording of number of random kicks
 	active_portion = 1;
-	for (auto par = particle.begin(); par != particle.end(); ++par) {
-		par->num_kick = 0;
+	for (auto &par : particle) {
+		par.num_kick = 0;
 	}
 
-	while ((active_portion > 0 || sedv > 0) && cycle < cutoffCycle && avg_count < cutoffMeasurement) {
-
+	while ((active_portion > 0 || sedv > 0) 
+		&& cycle < cutoffCycle 
+		&& avg_count < cutoffMeasurement) 
+	{
 		// Wait for rendering
 		if (pause && next_frame) pause = false;
 		if (pauseforRender || pause) {
@@ -180,120 +177,74 @@ void suspension::evolve()
 		}
 		pauseforShear = true;
 
-		// Generate hash table
-		for (auto par = particle.begin(); par != particle.end(); ++par)
-			par->hash = int(par->x / cellSizeX) + int(par->y / cellSizeY) * width;
-
 		// Sedimentation
 		if (sedv > 0) {
-			for (auto par = particle.begin(); par != particle.end(); ++par) {
-				par->y -= sedv;
-				if (par->y < 2 * cellSizeY) {
-					par->pretag = 1;
-					if (par->y < 0.5) par->y = 0.5;
+			for (auto &par : particle) {
+				par.y -= sedv;
+				if (par.y < 2 * cellSizeY) {
+					par.pretag = 1;
+					if (par.y < 0.5) par.y = 0.5;
 				}
 			}
 		}
 
-		// Sort by key using radix sort
-		sort(particle.begin(), particle.end(), less_than_key());
-
-		// Get unique count and location
-		for (int i = 0; i < height * width; ++i)
-			grid[i].offset = grid[i].count = 0;
-		pre_hash = particle.begin()->hash;
-		count = 1;
-		grid[pre_hash].offset = 0;
-		for (int i = 1; i < particle.size(); ++i)
-		{
-			if (particle[i].hash == pre_hash) ++count;
-			else {
-				grid[pre_hash].count = count;
-				pre_hash = particle[i].hash;
-				grid[pre_hash].offset = i;
-				count = 1;
-			}
-		}
-		grid[pre_hash].count = count;
+		// update grids
+		update();
 
 		// Main loop
-		if (lrPeriodic) lr_adjust = 1;
-		if (udPeriodic) ud_adjust = 1;
-
 		if (NUM_THREADS > 1) {
 			//multithreading (compute in parallel)
 			for (int i = 0; i < NUM_THREADS; i++)
-			{
-				t[i] = thread(
-					batchcheck,
-					&particle,
-					grid,
-                    height,
-                    width,
-                    cellSizeY,
-                    cellSizeX,
-                    sys_h,
-                    sys_w,
-					lr_adjust,
-					ud_adjust,
-					NUM_THREADS,
-					i,
-					gamma,
-					diameter
-				);
-			}
-			for (int i = 0; i < NUM_THREADS; i++) {
+				t[i] = thread(&basic::batchcheck, this, NUM_THREADS, i);
+			for (int i = 0; i < NUM_THREADS; i++)
 				t[i].join();
-			}
 		}
 		else {
 			//single core safe version
 			for (int y = 0; y < height + ud_adjust - 1; ++y)
 				for (int x = 0; x < width + lr_adjust - 1; ++x)
-					cellcheck(&particle, grid, y, x, height, width, cellSizeY, cellSizeX, sys_h, sys_w, gamma, diameter);
+					cellcheck(y, x);
 		}
 
-
-
 		// Random kick
-		for (auto par = particle.begin(); par != particle.end(); ++par) {
-			if (par->tag > 0) {
+		for (auto &par : particle) {
+			if (par.tag > 0) {
 				disp = dis(gen) * epsilon;
 				angle = dis(gen) * 2 * M_PI;
-				par->x += disp * cos(angle);
-				par->y += disp * sin(angle);
-				par->num_kick += 1;
+				par.x += disp * cos(angle);
+				par.y += disp * sin(angle);
+				par.num_kick += 1;
 			}
 		}
 
 		active_portion = 0;
-		for (auto par = particle.begin(); par != particle.end(); ++par) {
+		for (auto &par : particle) {
 			// Count active
-			if (par->tag > 0) active_portion += 1;
+			if (par.tag > 0) active_portion += 1;
 
 			// Prepare tags
-			if (par->tag > 0) par->accutag = 1.0f;
-			par->accutag -= 0.004f;
-			if (par->accutag < 0) par->accutag = 0.0f;
-			par->pretag = par->tag;
-			par->tag = 0;
+			if (par.tag > 0) par.accutag = 1.0f;
+			par.accutag -= 0.004f;
+			if (par.accutag < 0) par.accutag = 0.0f;
+			par.pretag = par.tag;
+			par.tag = 0;
 
 			// Deal with boundary condition
 			if (lrPeriodic) {
-				if (par->x < 0) par->x += sys_w;
-				if (par->x > sys_w) par->x -= sys_w;
+				if (par.x < 0) par.x += sys_w;
+				if (par.x > sys_w) par.x -= sys_w;
 			}
 			else {
-				if (par->x < 0.5) par->x = 1 - par->x;
-				if (par->x > sys_w - 0.5)   par->x = 2 * sys_w - 1 - par->x;
+				if (par.x < 0.5) par.x = 1 - par.x;
+				if (par.x > sys_w - 0.5)   par.x = 2 * sys_w - 1 - par.x;
 			}
 			if (udPeriodic) {
-				if (par->y < 0) par->y += sys_h;
-				if (par->y > sys_h) par->y -= sys_h;
+				if (par.y < 0) par.y += sys_h;
+				if (par.y > sys_h) par.y -= sys_h;
 			}
 			else {
-				if (par->y < 0.5) par->y = 1 - par->y;
-				if (par->y > sys_h - 0.5) par->y = 2 * sys_h - 1 - par->y;
+				if (par.y < 0.5) par.y = 1 - par.y;
+				if (par.y > sys_h - 0.5) par.y = 2 * sys_h - 1 - par.y;
 			}
 		}
 		active_portion /= double(particle.size());
@@ -325,17 +276,10 @@ void suspension::evolve()
 
 		// threshold of starting measurement
 		if (!steady)
-		{
 			if (moving_avg_curr > moving_avg_base)
-			{
 				steady = true;
-			}
-		}
 
-		if (!CLUSTER)
-		{
-			cout << '\r' << cycle << '\t' << int(active_portion * 100) << "%   " << flush;
-		}
+		if (!CLUSTER) cout << '\r' << cycle << '\t' << int(active_portion * 100) << "%   " << flush;
 		++cycle;
 
 		pauseforShear = false;
@@ -352,7 +296,6 @@ void suspension::evolve()
 	fact = avg_fact;
 	var = avg_fact2 - avg_fact * avg_fact;
 
-	delete[] grid;
 	delete[] moving_queue_base;
 	delete[] moving_queue_curr;
 
@@ -372,6 +315,15 @@ void suspension::evolve()
 	cout << 's' << endl;
 
 }
+
+void suspension::evolveLive()
+{
+	thread job1(&suspension::evolve, this);
+	Render.initRender();
+	Render.startRender();
+	job1.join();
+}
+
 
 void suspension::printInfo()
 {
@@ -574,51 +526,4 @@ void suspension::exportDensityXY()
 	delete[] distribution;
 }
 
-void suspension::connectivity()
-{
-	grid_info *grid = new grid_info[width * height];
-	int count;
-	int pre_hash;
-	double pre_cellsize = cellsize;
 
-	// temporally change cellsize
-	cellsize = epsilon + diameter;
-	updateInternalParam();
-	cellsize = pre_cellsize;
-
-	// generate mesh grids
-	for (auto par = particle.begin(); par != particle.end(); ++par) {
-		par->hash = int(par->x / cellSizeX) + int(par->y / cellSizeY) * width;
-		par->connectedNum = 0;
-		par->connectivity = 0.0f;
-	}
-		
-	// Sort by key using radix sort
-	sort(particle.begin(), particle.end(), less_than_key());
-
-	// Get unique count and location
-	for (int i = 0; i < height * width; ++i)
-		grid[i].offset = grid[i].count = 0;
-	pre_hash = particle.begin()->hash;
-	count = 1;
-	grid[pre_hash].offset = 0;
-	for (int i = 1; i < particle.size(); ++i)
-	{
-		if (particle[i].hash == pre_hash) ++count;
-		else {
-			grid[pre_hash].count = count;
-			pre_hash = particle[i].hash;
-			grid[pre_hash].offset = i;
-			count = 1;
-		}
-	}
-	grid[pre_hash].count = count;
-	
-	// main loop
-	if (lrPeriodic) lr_adjust = 1;
-	if (udPeriodic) ud_adjust = 1;
-
-	for (int y = 0; y < height + ud_adjust - 1; ++y)
-		for (int x = 0; x < width + lr_adjust - 1; ++x)
-			connectcheck(&particle, grid, epsilon + diameter, y, x, height, width, cellSizeY, cellSizeX, sys_h, sys_w, gamma, diameter);
-}

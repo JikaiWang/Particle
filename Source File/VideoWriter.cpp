@@ -8,46 +8,59 @@
 
 #include "VideoWriter.hpp"
 
-videoWriter::videoWriter(vector<par_info> *input, render_info *frame_info, bool imageOnly)
+videoWriter::videoWriter(info *_frameInfo)
 {
-	#ifdef _WIN32
-	if (!imageOnly) writer.open("output/movie.mov", VideoWriter::fourcc('X', '2', '6', '4'), 60.0, Size(COL, ROW));
-	#endif // _WIN32
-	#ifdef __APPLE__
-	if (!imageOnly) writer.open("./movie.mov", VideoWriter::fourcc('a', 'v', 'c', '1'), 30.0, Size(ROW, COL));
-	#endif // __APPLE__
-
-    particle = input;
-    frameInfo = frame_info;
-    activeColor = Scalar(0, 0, 255);
+	activeColor = Scalar(0, 0, 255);
 	activeFillColor = Scalar(100, 100, 255);
-    inactiveColor = Scalar(255, 0, 0);
+	inactiveColor = Scalar(255, 0, 0);
 	inactiveFillColor = Scalar(255, 100, 100);
+    frameInfo = _frameInfo;
 }
 
-void videoWriter::writeFrame(bool imageOnly)
+videoWriter::~videoWriter()
 {
+	;
+}
+
+void videoWriter::initMovie()
+{
+	#ifdef _WIN32
+	writer.open("output/movie.mov", 
+		VideoWriter::fourcc('X', '2', '6', '4'), 60.0, Size(COL, ROW));
+	#endif // _WIN32
+	#ifdef __APPLE__
+	writer.open("./movie.mov", 
+		VideoWriter::fourcc('a', 'v', 'c', '1'), 30.0, Size(ROW, COL));
+	#endif // __APPLE__
+	imageOnly = false;
+}
+
+void videoWriter::writeFrame()
+{
+	particle = frameInfo->p_particle;
     frame = Scalar(255, 255, 255);
     int x;
     int y;
     double x2;
     double y2;
-	radius = int(0.5 * float(ROW) / frameInfo->sys_w);
+	radius_ = 0.5 * frameInfo->diameter;
+	epsilon_ = frameInfo->epsilon;
+	int radius = int(radius_ * float(ROW) / frameInfo->sys_w);
 
-    for (int i = 0; i < frameInfo->sys_w / frameInfo->cellsizeX; ++i) {
-        x = int(ROW * double(i) * frameInfo->cellsizeX / frameInfo->sys_w);
+    for (int i = 0; i < frameInfo->sys_w / frameInfo->cellSizeX; ++i) {
+        x = int(ROW * double(i) * frameInfo->cellSizeX / frameInfo->sys_w);
         line(frame, Point(x, 0), Point(x, COL - 1), Scalar(0, 0, 0), 1, LINE_AA);
     }
-    for (int i = 0; i < frameInfo->sys_h / frameInfo->cellsizeY; ++i) {
-        y = int(COL * double(i) * frameInfo->cellsizeY / frameInfo->sys_h);
+    for (int i = 0; i < frameInfo->sys_h / frameInfo->cellSizeY; ++i) {
+        y = int(COL * double(i) * frameInfo->cellSizeY / frameInfo->sys_h);
         line(frame, Point(0, y), Point(ROW - 1, y), Scalar(0, 0, 0), 1, LINE_AA);
     }
 
-    for (auto par = particle->begin(); par != particle->end(); ++par) {
-        x = int(ROW * par->x / frameInfo->sys_w);
-        y = int(COL * (1 - par->y / frameInfo->sys_h));
+    for (auto const &par : *particle) {
+        x = int(ROW * par.x / frameInfo->sys_w);
+        y = int(COL * (1 - par.y / frameInfo->sys_h));
         
-        if (par->num_kick != 0){
+        if (par.num_kick != 0){
 			circle(frame, Point(x, y), radius, activeFillColor, -1, LINE_AA);
 			circle(frame, Point(x, y), radius, activeColor, THICKNESS, LINE_AA);
         } else {
@@ -55,16 +68,21 @@ void videoWriter::writeFrame(bool imageOnly)
 			circle(frame, Point(x, y), radius, inactiveColor, THICKNESS);
         }
         
-        if ((par->x < 0.5) || (par->y < 0.5) || (par->x > frameInfo->sys_w - 0.5) || (par->y < frameInfo->sys_h > 0.5)) {
-            x2 = par->x;
-            y2 = par->y;
-            if (par->x < 0.5) x2 += frameInfo->sys_w;
-            if (par->y < 0.5) y2 += frameInfo->sys_h;
-            if (par->x > frameInfo->sys_w - 0.5) x2 -= frameInfo->sys_w;
-            if (par->y > frameInfo->sys_h - 0.5) y2 -= frameInfo->sys_h;
+		// draw particles across boundary
+		if ((par.x < radius_) ||
+			(par.y < radius_) ||
+			(par.x > frameInfo->sys_w - radius_) ||
+			(par.y < frameInfo->sys_h > radius_))
+		{
+            x2 = par.x;
+            y2 = par.y;
+            if (par.x < 0.5) x2 += frameInfo->sys_w;
+            if (par.y < 0.5) y2 += frameInfo->sys_h;
+            if (par.x > frameInfo->sys_w - 0.5) x2 -= frameInfo->sys_w;
+            if (par.y > frameInfo->sys_h - 0.5) y2 -= frameInfo->sys_h;
             x = int(ROW * x2 / frameInfo->sys_w);
             y = int(COL * (1 - y2 / frameInfo->sys_h));
-			if (par->num_kick != 0) {
+			if (par.num_kick != 0) {
 				circle(frame, Point(x, y), radius, activeFillColor, -1, LINE_AA);
 				circle(frame, Point(x, y), radius, activeColor, THICKNESS, LINE_AA);
 			}
@@ -82,64 +100,71 @@ void videoWriter::writeFrame(bool imageOnly)
 	}
 }
 
-void videoWriter::writeFrameConnectivity(bool imageOnly)
+void videoWriter::writeFrameConnectivity(String filename, double max, double min)
 {
+	particle = frameInfo->p_particle;
 	frame = Scalar(255, 255, 255);
 	int x;
 	int y;
 	double x2;
 	double y2;
-	radius = int(0.5 * float(ROW) / frameInfo->sys_w);
-	double maximum = 1;
-	double minimum = 1;
+	epsilon_ = frameInfo->epsilon;
+	radius_ = 0.5 * (frameInfo->diameter);
+	int radius = int(radius_ * float(ROW) / frameInfo->sys_w);
+	double maximum = max;
+	double minimum = min;
 
-	for (auto par = particle->begin(); par != particle->end(); ++par) {
-		if (par->connectivity > maximum) maximum = par->connectivity;
-		if (par->connectivity < minimum) minimum = par->connectivity;
+	for (auto &par : *particle) {
+		if (par.connectivity > maximum) maximum = par.connectivity;
+		if (par.connectivity < minimum) minimum = par.connectivity;
 	}
+	std::cout << "maximum: " << maximum << std::endl;
+	std::cout << "minimum: " << minimum << std::endl;
 	
 	// draw grid line
-	for (int i = 0; i < frameInfo->sys_w / frameInfo->cellsizeX; ++i) {
-		x = int(ROW * double(i) * frameInfo->cellsizeX / frameInfo->sys_w);
-		line(frame, Point(x, 0), Point(x, COL - 1), Scalar(0, 0, 0), 1, LINE_AA);
-	}
-	for (int i = 0; i < frameInfo->sys_h / frameInfo->cellsizeY; ++i) {
-		y = int(COL * double(i) * frameInfo->cellsizeY / frameInfo->sys_h);
-		line(frame, Point(0, y), Point(ROW - 1, y), Scalar(0, 0, 0), 1, LINE_AA);
-	}
+	//for (int i = 0; i < frameInfo->sys_w / frameInfo->cellSizeX; ++i) {
+	//	x = int(ROW * double(i) * frameInfo->cellSizeX / frameInfo->sys_w);
+	//	line(frame, Point(x, 0), Point(x, COL - 1), Scalar(0, 0, 0), 1, LINE_AA);
+	//}
+	//for (int i = 0; i < frameInfo->sys_h / frameInfo->cellSizeY; ++i) {
+	//	y = int(COL * double(i) * frameInfo->cellSizeY / frameInfo->sys_h);
+	//	line(frame, Point(0, y), Point(ROW - 1, y), Scalar(0, 0, 0), 1, LINE_AA);
+	//}
 
 	// draw particles
 	for (auto par = particle->begin(); par != particle->end(); ++par) {
 		x = int(ROW * par->x / frameInfo->sys_w);
 		y = int(COL * (1 - par->y / frameInfo->sys_h));
-		circle(frame, Point(x, y), radius, COLORMODE(minimum, maximum, par->connectivity), -1, LINE_AA);
+		circle(frame, Point(x, y), radius, 
+			COLORMODE(minimum, maximum, par->connectivity), -1, LINE_AA);
 		circle(frame, Point(x, y), radius, (0, 0, 0), THICKNESS, LINE_AA);
-		if (TEXT) putText(frame, to_string(par->connectivity), Point(x, y), 
+		if (TEXT) putText(frame, std::to_string(par->connectivity), Point(x, y), 
 			FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2);
 		
 
 		// draw particles across boundary
-		if ((par->x < 0.5) || (par->y < 0.5) || (par->x > frameInfo->sys_w - 0.5) || (par->y < frameInfo->sys_h > 0.5)) {
+		if ((par->x < radius_) || 
+			(par->y < radius_) || 
+			(par->x > frameInfo->sys_w - radius_) || 
+			(par->y < frameInfo->sys_h > radius_)) 
+		{
 			x2 = par->x;
 			y2 = par->y;
-			if (par->x < 0.5) x2 += frameInfo->sys_w;
-			if (par->y < 0.5) y2 += frameInfo->sys_h;
-			if (par->x > frameInfo->sys_w - 0.5) x2 -= frameInfo->sys_w;
-			if (par->y > frameInfo->sys_h - 0.5) y2 -= frameInfo->sys_h;
+			if (par->x < radius_) x2 += frameInfo->sys_w;
+			if (par->y < radius_) y2 += frameInfo->sys_h;
+			if (par->x > frameInfo->sys_w - radius_) x2 -= frameInfo->sys_w;
+			if (par->y > frameInfo->sys_h - radius_) y2 -= frameInfo->sys_h;
 			x = int(ROW * x2 / frameInfo->sys_w);
 			y = int(COL * (1 - y2 / frameInfo->sys_h));
-			circle(frame, Point(x, y), radius, COLORMODE(minimum, maximum, par->connectivity), -1, LINE_AA);
+			circle(frame, Point(x, y), radius, 
+				COLORMODE(minimum, maximum, par->connectivity), -1, LINE_AA);
 			circle(frame, Point(x, y), radius, (0, 0, 0), THICKNESS, LINE_AA);
-			if (TEXT) putText(frame, to_string(par->connectivity), Point(x, y), 
+			if (TEXT) putText(frame, std::to_string(par->connectivity), Point(x, y), 
 				FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2);
 		}
 	}
-	if (imageOnly) {
-		imwrite("output/connectivity.jpg", frame);
-	}
-	else {
-		writer.write(frame);
-	}
+	if (imageOnly) imwrite("output/" + filename + ".jpg", frame);
+	else writer.write(frame);
 }
 
 
@@ -147,19 +172,10 @@ Scalar videoWriter::heatmap(double minimum, double maximum, double value)
 {
 	// 5-color heatmap
 	double percent = (value - minimum) / (maximum - minimum);
-	if (percent < 0.25)
-	{
-		return Scalar(255, int(4 * 255 * percent), 0);
-	}
-	else if (percent < 0.5) {
-		return Scalar(int(4 * 255 * (0.5 - percent)), 255, 0);
-	}
-	else if (percent < 0.75) {
-		return Scalar(0, 255, int(4 * 255 * (percent - 0.5)));
-	}
-	else {
-		return Scalar(0, int(4 * 255 * (1 - percent)), 255);
-	}
+	if (percent < 0.25) return Scalar(255, int(4 * 255 * percent), 0);
+	else if (percent < 0.5) return Scalar(int(4 * 255 * (0.5 - percent)), 255, 0);
+	else if (percent < 0.75) return Scalar(0, 255, int(4 * 255 * (percent - 0.5)));
+	else return Scalar(0, int(4 * 255 * (1 - percent)), 255);
 }
 
 Scalar videoWriter::grayscale(double minimum, double maximum, double value)

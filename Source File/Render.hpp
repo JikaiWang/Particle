@@ -6,8 +6,7 @@
 //  Copyright © 2018 Jikai Wang. All rights reserved.
 //
 
-#ifndef Render_hpp
-#define Render_hpp
+#pragma once
 
 #define WINDOW_TITLE_PREFIX "Suspension system"
 
@@ -18,11 +17,23 @@
 #include <GL/freeglut.h>
 #endif // __APPLE__
 
-#include "Basics.h"
+#define _USE_MATH_DEFINES
+#include "Struct.hpp"
+#include <vector>
+#include <thread>
+#include <chrono>
+#include <cmath>
+#include <iostream>
 
-void processNormalKeys(unsigned char key, int x, int y);
-void initRenderer(render_info renderInfo);
-void render();
+class render
+{
+public:
+	render(info *_renderInfo);
+	~render();
+	void initRender();
+	void startRender();
 
+private:
+	info *Info;
+};
 
-#endif /* Render_hpp */

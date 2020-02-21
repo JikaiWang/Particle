@@ -7,7 +7,7 @@
 //
 #include "Experiment.hpp"
 
-
+/*
 
 void distri_over_time()
 {
@@ -186,7 +186,7 @@ void two_type_particle()
 	system.num = int(system.particle.size());
 
 	//    thread job1(&suspension::evolve, &system);
-	//    initRenderer(system.renderInfo);
+	//    initRenderer(system.Info);
 	//    render();
 	//    job1.join();
 	system.evolve();
@@ -241,7 +241,7 @@ void active_phi()
 
 void active_decay()
 {
-	// measure 100 times ==> 100*cutoffCycle
+	// Measure 100 times ==> 100*cutoffCycle
 	suspension system;
 	system.generateNew();
 	char filename[100];
@@ -589,10 +589,10 @@ void activation_movie_dot()
 	}
 
 	system.cutoffCycle = 1;
-	videoWriter writer(&(system.particle), &(system.renderInfo));
+	system.VideoWriter.initMovie();
 	while (system.active_portion > 0) {
 		system.evolve();
-		writer.writeFrame();
+		system.VideoWriter.writeFrame();
 	}
 }
 
@@ -660,10 +660,10 @@ void activation_movie_line()
     }
 
 	system.cutoffCycle = 1;
-	videoWriter writer(&(system.particle), &(system.renderInfo));
+	system.VideoWriter.initMovie();
 	while (system.active_portion > 0) {
 		system.evolve();
-		writer.writeFrame();
+		system.VideoWriter.writeFrame();
         sort(system.particle.begin(), system.particle.end(), less_than_id());
         for (int i = 0; i < system.num; ++i){
             buffer.at(i).num_kick += system.particle.at(i).num_kick;
@@ -695,3 +695,6 @@ void activation_movie_line()
 
 
 #endif
+
+
+*/

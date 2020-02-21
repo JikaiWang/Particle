@@ -5,16 +5,16 @@
 //  Created by Jikai Wang on 12/13/18.
 //  Copyright © 2018 Jikai Wang. All rights reserved.
 //
-
-#ifndef Measurement_hpp
-#define Measurement_hpp
+#pragma once
 
 #include "Basics.h"
+#include "Struct.hpp"
 #include <complex>
 #include <cmath>
 
 #define STEPS 10.0
-void structuralFactor(render_info *info);
 
 
-#endif /* Measurement_hpp */
+
+void structuralFactor(info *info);
+

@@ -9,44 +9,25 @@
 #include "Experiment.hpp"
 
 int main(int argc, const char *argv[]) {
-    // Export video sample
-    suspension system1;
-    system1.generateNew();
-    system1.updateInternalParam();
-    videoWriter video(&system1.particle, &system1.renderInfo, true);
-	/*system1.reversible = false;
-    while (!system1.reversible) {
-		system1.connectivity();
-        video.writeFrameConnectivity();
-        system1.evolve();
-    }*/
-	system1.evolve();
-	system1.connectivity();
-	video.writeFrameConnectivity(true);
-
-	// test live video
-    /*suspension system1;
-    system1.generateNew();
-    system1.printInfo();
-    thread job1(&suspension::evolve, &system1);
-    initRenderer(system1.renderInfo);
-    render();
-    job1.join();*/
-
-	// test probability function
-	/*double epsilon = 1.5;
-	double diameter = 1.0;
-	for (size_t i = 0; i < 500; i++)
-	{
-		cout << 0.01*i << '\t' << probability(0.01*i, diameter, epsilon) << endl;
-	}*/
-	//probability(1, diameter, epsilon);
-
-	// test angle function
-	/*for (size_t i = 0; i < 100; i++)
-	{
-		cout << 0.01*i << '\t' << angle(0.6, 1.0, 0.01*i) << endl;
-	}*/
-
+ 
+    suspension system;
+	system.fraction = 0.376;
+	system.epsilon = 0.5;
+	system.sys_h = system.sys_w = 120;
+	system.initialOverlap = false;
+	system.generateNew();
+	system.updateInfo();
+	system.Network.Measure(0.5);
+	system.Network.PrintSystemAverage();
+	system.VideoWriter.writeFrameConnectivity(
+		"b05w " + to_string(system.sys_h) + ' ' + to_string(system.epsilon) + " init", 0.12);
+	system.initialOverlap = true;
+	system.generateNew();
+	system.evolve();
+	system.Network.Measure(0.5);
+	system.Network.PrintSystemAverage();
+	system.VideoWriter.writeFrameConnectivity(
+		"b05w " + to_string(system.sys_h) + ' ' + to_string(system.epsilon) + " crit", 0.12);
+	
     return 0;
 }

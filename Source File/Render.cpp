@@ -12,7 +12,7 @@ int frame_time;
 int base_time;
 int frame_count = 0;
 int CurrentWidth;
-int CurrentHeight = 2000;
+int CurrentHeight = 1000;
 int WindowHandle = 0;
 int num_Vertex;
 int num;
@@ -29,7 +29,7 @@ GLuint ColorBufferId;
 GLfloat *Circle = NULL;
 GLfloat *Positions = NULL;
 GLfloat *Colors = NULL;
-vector<par_info> *particle = NULL;
+std::vector<par_info> *particle = NULL;
 bool *pauseforRender = NULL;
 bool *pauseforShear = NULL;
 bool *pause = NULL;
@@ -85,7 +85,7 @@ void GenCircle()
     GLfloat diameter_x = 1 / sys_w;
     GLfloat diameter_y = 1 / sys_h;
     
-    vector<GLfloat> vertex_circle;
+    std::vector<GLfloat> vertex_circle;
     for (int i = 0; i < num_Vertex; i++)
     {
         vertex_circle.push_back(2 * diameter_x * cos(2 * M_PI * i / float(num_Vertex)));
@@ -105,12 +105,12 @@ void GenCircle()
 void RenderFunction()
 {
     frame_count++;
-    double x;
-    double y;
+    // double x;
+    // double y;
     
     i = 0;
     *pauseforRender = true;
-    while (*pauseforShear) this_thread::sleep_for(chrono::nanoseconds(1));
+    while (*pauseforShear) std::this_thread::sleep_for(std::chrono::nanoseconds(1));
     for (auto par = particle->begin(); par != particle->end(); ++par) {
         Positions[i++] = 4 * par->x / sys_w - 2;
         Positions[i++] = 4 * par->y / sys_h - 2;
@@ -341,17 +341,16 @@ void Cleanup(void)
     delete[] Colors;
 }
 
-
-void initRenderer(render_info renderInfo)
+void render::initRender()
 {
-    pauseforRender = renderInfo.p_pauseforRender;
-    pauseforShear = renderInfo.p_pauseforShear;
-    pause = renderInfo.p_pause;
-    next_frame = renderInfo.p_next_frame;
-    particle = renderInfo.p_particle;
+    pauseforRender = Info->p_pauseforRender;
+    pauseforShear = Info->p_pauseforShear;
+    pause = Info->p_pause;
+    next_frame = Info->p_next_frame;
+    particle = Info->p_particle;
     num = int(particle->size());
-    sys_w = renderInfo.sys_w;
-    sys_h = renderInfo.sys_h;
+    sys_w = Info->sys_w;
+    sys_h = Info->sys_h;
     CurrentWidth = CurrentHeight * sys_w / sys_h;
     
     num_Vertex = 10 * CurrentHeight / sys_h;
@@ -432,9 +431,14 @@ void initRenderer(render_info renderInfo)
 //    cout << glGetString(GL_VERSION) << endl;
 }
 
-void render()
+void render::startRender()
 {
     glutMainLoop();
 }
 
- 
+render::render(info *_renderInfo) 
+{
+	Info = _renderInfo; 
+}
+
+render::~render() {}

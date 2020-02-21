@@ -1,165 +1,91 @@
 #pragma once
 
-#ifndef Basics_H
-#define Basics_H
-
 #define _USE_MATH_DEFINES
 #include <iostream>
 #include <math.h>
 #include <vector>
-#include <thread>
+//#include <thread>
 #include <iomanip>
 #include <algorithm>
 #include <random>
 #include <fstream>
 #include <chrono>
 #include <iterator>
-#include <string>
-#include <sys/stat.h>
-#include <complex>
-#include <cmath>
+//#include <string>
+//#include <sys/stat.h>
+//#include <complex>
+//#include <cmath>
+
+#include "Struct.hpp"
 
 #ifdef _WIN32
 #define WIN true
 #endif
 
-#define INCREMENT 0.0001
 
 using namespace std;
 
-struct par_info
-{
-	double x; // coordinates
-	double y;
-	int tag; // active
-	int pretag; // active in last cycle
-    float accutag = 0.0f; // for rendering purposes
-	int hash; // hash based on x-y coordinates
-    int type = 0;
-    int num_kick = 0; // number of kicks during shear
-    double connectivity = 0; // area fraction of surrounding particles
-	double connectedNum = 0; // number of surrounding particles
-    int id;
-};
-
-struct grid_info
-{
-	int offset;
-	int count;
-};
-
-struct var_info
-{
-    double box_size;
-    double var;
-};
-
-struct render_info
-{
-	double sys_w;
-	double sys_h;
-    double cellsizeX;
-    double cellsizeY;
-	double radius;
-	bool *p_pauseforRender;
-	bool *p_pauseforShear;
-	bool *p_pause;
-	bool *p_next_frame;
-	vector<par_info> *p_particle;
-};
-
-int offset(int y, int x, int ydimension, int xdimension); //index rotation
-
-struct less_than_key
-{
-	inline bool operator() (const par_info& par1, const par_info& par2)
-	{
-		return (par1.hash < par2.hash);
-	}
-};
-
-struct less_than_id
-{
-	inline bool operator() (const par_info& par1, const par_info& par2)
-	{
-		return (par1.id < par2.id);
-	}
-};
-
-void cellcheck(
-    //check single cell
-	vector<par_info> *particle, 
-	grid_info *grid,
-	int y,
-	int x, 
-	int HEIGHT,
-	int WIDTH,
-    double cellsizeY,
-    double cellsizeX,
-    double sys_h,
-    double sys_w,
-    double gamma,
-    double diameter);
-
-void batchcheck(
-    //Used for multithreading
-	vector<par_info> *particle, 
-	grid_info *grid,
-	int HEIGHT,
-	int WIDTH,
-    double cellsizeY,
-    double cellsizeX,
-    double sys_h,
-    double sys_w,
-	int lr_adjust, 
-	int ud_adjust,
-	int num_threads,
-	int index_thread,
-    double gamma,
-    double diameter);
-
-void connectcheck(
-	//check single cell
-	vector<par_info> *particle,
-	grid_info *grid,
-	double radius,
-	int y,
-	int x,
-	int HEIGHT,
-	int WIDTH,
-	double cellsizeY,
-	double cellsizeX,
-	double sys_h,
-	double sys_w,
-	double gamma,
-	double diameter);
-
-struct nodeProperty
-{
-	double connectedNumber;
-	double connectedArea;
-	double clusteringCoefficient = 0;
-	double clusteringCoefficientWeighted = 0;
-	double betweenness = 0;
-	double betweennessWeighted = 0;
-};
-
-class AdjacencyMatrix
+class basic // support for shearing function
 {
 public:
-	double **mat;
-	int dimension;
-	vector<nodeProperty> graph;
+	// simulation parameters
+	static double fraction;
+	static double gamma;
+	static double epsilon;
+	static double diameter;
+	static double sys_w ;
+	static double sys_h ;
+	static double cellsize; //Griding unit size
+	static bool lrPeriodic;
+	static bool udPeriodic;
 
-	AdjacencyMatrix(int dim);
-	~AdjacencyMatrix();
+	struct var_info { double box_size; double var; };
 
-	void setValue(int i, int j, double value);
-	void addProperty();
+	//Used for multithreading
+	void batchcheck(int num_threads, int index_thread);
+
+	//update internal variable
+	void init();
+	void update();
+
+	basic();
+	~basic();
+
+protected:
+	// support class
+	class adjacencyMatrix;
+	class adjacencyList;
+
+	adjacencyList *graph;
+
+	int height;
+	int width;
+	double cellSizeY;
+	double cellSizeX;
+	int lr_adjust;
+	int ud_adjust;
+	double radius;
+
+	//Container for particle position and status
+	static vector<par_info> particle;
+
+	//index rotation
+	int offset(int y, int x, int ydimension, int xdimension);
+
+	//check single cell
+	void cellcheck(int y, int x); 
+
+	//check single cell
+	void connectcheck(int y, int x);
+
+
+private:
+	const double Increment = 0.0001;  // step size for numerical integration
+
+	double angle(double dist, double diameter, double r);
+	double integral(double l, double r, double epsilon, double dist, double diameter, bool flag);
+	double probability(double dist, double diameter, double epsilon);
+
+	class Grid;
+	Grid *grid = nullptr;
 };
-
-double angle(double dist, double diameter, double r);
-double integral(double l, double r, double epsilon, double dist, double diameter, bool flag);
-double probability(double dist, double diameter, double epsilon);
-
-#endif // !Basics_H

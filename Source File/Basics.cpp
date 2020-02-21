@@ -1,7 +1,41 @@
 #include "Basics.h"
+#include "Grid.hpp"
+#include "Graph.hpp"
+
+// default parameters
+double basic::fraction = 0.37;
+double basic::gamma = 0.0;
+double basic::epsilon = 0.5;
+double basic::diameter = 1.0;
+double basic::sys_w = 10;
+double basic::sys_h = 10;
+double basic::cellsize = 1 + int(gamma);
+bool basic::lrPeriodic = true;
+bool basic::udPeriodic = true;
+vector<par_info> basic::particle = vector<par_info>();
+
+//update internal variable
+void basic::init() 
+{
+	width = int(sys_w / cellsize);
+	height = int(sys_h / cellsize);
+	cellSizeX = sys_w / double(width);
+	cellSizeY = sys_h / double(height);
+	if (lrPeriodic) { lr_adjust = 1; }
+	else lr_adjust = 0;
+	if (udPeriodic) { ud_adjust = 1; }
+	else ud_adjust = 0;
+	delete grid;
+	grid = new Grid(cellSizeX, cellSizeY, width, height, &particle);
+}
+
+void basic::update()
+{
+	grid->update();
+}
 
 //index rotation
-int offset(int y, int x, int ydimension, int xdimension)
+int basic::offset(int y, int x, int ydimension, int xdimension)
 {
 	// numpy style indexing
 	return (y - (y / ydimension) * ydimension) * xdimension
@@ -9,44 +43,34 @@ int offset(int y, int x, int ydimension, int xdimension)
 }
 
 //check single cell
-void cellcheck(vector<par_info> *particle, grid_info *grid,
-	int y, int x, int HEIGHT, int WIDTH, double cellsizeY, double cellsizeX, 
-	double sys_h, double sys_w, double gamma, double diameter)
+void basic::cellcheck(int y, int x)
 {
-	//    double testrange[5] = {1.0, 0.95, 0.75, 0.7, 0.5};
-	//    double testrange[5] = {1.0, 1.0, 1.0, 1.0, 1.0};
-	//    double Diameter[5] = {1.0/4.0, 1.19/4.0, 1.13/4.0, 1.06/4.0, 1.5/4.0};
-
+	int gridIndex;
 	bool pre_active = false;
 	vector<par_info> buffer; // Partilce to test
-	grid_info cell[4]; // adjacent cells
 
 	// Load cells
 	for (int i = 0; i < 4; ++i) {
-		cell[i] = grid[offset(y + i / 2, x + i % 2, HEIGHT, WIDTH)];
-		for (int j = 0; j < cell[i].count; ++j)
-			buffer.push_back((*particle)[cell[i].offset + j]);
+		gridIndex = offset(y + i / 2, x + i % 2, height, width);
+		for (int j = 0; j < grid->count(gridIndex); ++j)
+            buffer.push_back(particle[grid->offset(gridIndex) + j]);
 	}
 
 	// shift particle near the boundary
-	if (x == WIDTH - 1) {
-		for (auto par = buffer.begin(); par != buffer.end(); ++par) {
-			if (par->x < cellsizeX) par->x += sys_w;
-		}
-	}
-	if (y == HEIGHT - 1) {
-		for (auto par = buffer.begin(); par != buffer.end(); ++par) {
-			if (par->y < cellsizeY) par->y += sys_h;
-		}
-	}
+	if (x == width - 1)
+		for (auto &par : buffer)
+			if (par.x < cellSizeX) par.x += sys_w;
+	if (y == height - 1)
+		for (auto &par : buffer)
+			if (par.y < cellSizeY) par.y += sys_h;
 
 	// Return when no need to check
-	if (buffer.empty()) return; // return when no particle
-	for (auto par = buffer.begin(); par != buffer.end(); ++par)
-		if (par->pretag > 0) pre_active = true; // check pretag
-	if (!pre_active) return; // return when previously not active
+	if (buffer.empty()) return;  // return when no particle
+	for (auto const &par : buffer)  // check pretag
+		if (par.pretag > 0) pre_active = true; 
+	if (!pre_active) return;  // return when previously not active
 
-							 // Collision check (recurrent)
+	// Collision check (recurrent)
 	for (auto target = buffer.begin(); target != buffer.end(); ++target) {
 		auto par = target + 1;
 		for (int i = 0; i < buffer.size() - 1; ++i) {
@@ -56,77 +80,87 @@ void cellcheck(vector<par_info> *particle, grid_info *grid,
 				diameter * diameter)
 				target->tag += 1;
 			if ((target->x - par->x)*(target->y - par->y) < 0) {
-				if (abs(target->x - par->x) < sqrt(diameter * diameter - (target->y - par->y)*(target->y - par->y)) 
+				if (abs(target->x - par->x) < sqrt(diameter * diameter 
+					- (target->y - par->y)*(target->y - par->y)) 
 					+ abs(target->y - par->y) * gamma)
 					target->tag += 1;
 			}
-			//            if (target->type == par->type)
-			//            {
-			//                if ((target->x - par->x)*(target->x - par->x)
-			//                    + (target->y - par->y)*(target->y - par->y) < testrange[target->type] * testrange[target->type])
-			//                {
-			//                    target->tag += 1;
-			//                }
-			//            }
 			++par;
 		}
-
 	}
 
 	// restore particle position near the boundary
-	if (x == WIDTH - 1) {
-		for (auto par = buffer.begin(); par != buffer.end(); ++par) {
-			if (par->x > sys_w) par->x -= sys_w;
-		}
-	}
-	if (y == HEIGHT - 1) {
-		for (auto par = buffer.begin(); par != buffer.end(); ++par) {
-			if (par->y > sys_h) par->y -= sys_h;
-		}
-	}
+	if (x == width - 1)
+		for (auto &par : buffer)
+			if (par.x > sys_w) par.x -= sys_w;
+	if (y == height - 1)
+		for (auto &par : buffer)
+			if (par.y > sys_h) par.y -= sys_h;
 
 	// Copy result back
 	auto target = buffer.begin();
 	for (int i = 0; i < 4; ++i) {
-		for (int j = 0; j < cell[i].count; ++j)
-			(*particle)[cell[i].offset + j] = *target++;
+		gridIndex = offset(y + i / 2, x + i % 2, height, width);
+		for (int j = 0; j < grid->count(gridIndex); ++j)
+			particle[grid->offset(gridIndex) + j] = *target++;
 	}
 }
 
 //Used for multithreading
-void batchcheck(
-	vector<par_info> *particle,
-	grid_info *grid,
-	int HEIGHT,
-	int WIDTH,
-	double cellsizeY,
-	double cellsizeX,
-	double sys_h,
-	double sys_w,
-	int lr_adjust,
-	int ud_adjust,
-	int num_threads,
-	int index_thread,
-	double gamma,
-	double diameter)
+void basic::batchcheck(int num_threads, int index_thread)
 {
-	int height = HEIGHT + ud_adjust;
-	int wpt = (WIDTH + lr_adjust - 1) / num_threads + 1; // width per thread
+	int _height = height + ud_adjust;
+	int wpt = (width + lr_adjust - 1) / num_threads + 1; // width per thread
 
 	for (int x = index_thread * wpt; x < (index_thread + 1) * wpt; ++x)
-		for (int y = 0; y < height - 1; ++y)
-		{
-			if (x < WIDTH + lr_adjust - 1)
-				cellcheck(particle, grid, y, x, HEIGHT, WIDTH, cellsizeY, cellsizeX, sys_h, sys_w, gamma, diameter);
-		}
+		for (int y = 0; y < _height - 1; ++y)
+			if (x < width + lr_adjust - 1)
+				cellcheck(y, x);
 }
 
 
-double angle(double dist, double diameter, double r)
+void basic::connectcheck(int y, int x)
+{
+	int gridIndex;
+	double dist;
+	vector<par_info> buffer; // Partilce to test
+
+	// Load cells
+	for (int i = 0; i < 4; ++i) {
+		gridIndex = offset(y + i / 2, x + i % 2, height, width);
+		for (int j = 0; j < grid->count(gridIndex); ++j)
+			buffer.push_back(particle[grid->offset(gridIndex) + j]);
+	}
+
+	// shift particle near the boundary
+	if (x == width - 1)
+		for (auto &par : buffer)
+			if (par.x < cellSizeX) par.x += sys_w;
+	if (y == height - 1)
+		for (auto &par : buffer)
+			if (par.y < cellSizeY) par.y += sys_h;
+
+	// connection check
+	for (auto const &target : buffer) {
+		for (auto const &par : buffer) {
+			dist = (target.x - par.x)*(target.x - par.x)
+				+ (target.y - par.y)*(target.y - par.y);
+			if (dist < (diameter + epsilon) * (diameter + epsilon)) {
+				if (target.id != par.id)
+					graph->SetValue(target.id, par.id, 
+						probability(pow(dist, 0.5), diameter, epsilon));
+			}
+		}
+	}
+}
+
+
+
+double basic::angle(double dist, double diameter, double r)
 {
 	if (r < 1e-9) return 0;
-	double result = sqrt(abs(4.0*r*r*diameter*diameter - pow(dist*dist - r*r - diameter*diameter, 2))) / (2 * r*dist);
-	//cout << dist << '\t' << diameter << '\t' << r << '\t' << result << endl;
+	double result = sqrt(abs(4.0*r*r*diameter*diameter
+		- pow(dist*dist - r*r - diameter*diameter, 2))) / (2 * r*dist);
 	if (result > 1) {
 		return M_PI_2;
 	}
@@ -135,31 +169,27 @@ double angle(double dist, double diameter, double r)
 	}
 }
 
-double integral(double l, double r, double epsilon, double dist, double diameter, bool flag)
+double basic::integral(double l, double r, double epsilon, double dist, double diameter, bool flag)
 {
 	double x = l;
 	double result = 0;
 
-	if (flag)
-	{
-		while (x < r)
-		{
-			result += angle(dist, diameter, x) * INCREMENT / (epsilon * M_PI);
-			x += INCREMENT;
+	if (flag) {
+		while (x < r) {
+			result += angle(dist, diameter, x) * Increment / (epsilon * M_PI);
+			x += Increment;
 		}
 	}
 	else {
-		while (x < r)
-		{
-			result += (M_PI - angle(dist, diameter, x)) * INCREMENT / (epsilon * M_PI);
-			x += INCREMENT;
+		while (x < r) {
+			result += (M_PI - angle(dist, diameter, x)) * Increment / (epsilon * M_PI);
+			x += Increment;
 		}
 	}
-	//cout << result << endl;
 	return result;
 }
 
-double probability(double dist, double diameter, double epsilon)
+double basic::probability(double dist, double diameter, double epsilon)
 {
 	if (epsilon < 1e-9) return 0;
 
@@ -195,118 +225,9 @@ double probability(double dist, double diameter, double epsilon)
 	}
 }
 
+basic::basic() {}
 
-
-void connectcheck(vector<par_info> *particle, grid_info *grid, double radius,
-	int y, int x, int HEIGHT, int WIDTH, double cellsizeY, double cellsizeX, 
-	double sys_h, double sys_w, double gamma, double diameter)
+basic::~basic() 
 {
-	int shift_offset;
-	double dist;
-	double prob;
-	vector<par_info> buffer; // Partilce to test
-	vector<par_info> center; // Partilce in the center cell
-	grid_info cell[9]; // adjacent cells
-
-	// Load cells
-	for (int i = 0; i < 9; ++i) {
-		shift_offset = offset(y + i / 3 - 1, x + i % 3 - 1, HEIGHT, WIDTH);
-		if (y + i / 3 - 1 < 0) shift_offset += WIDTH * HEIGHT;
-		if (x + i % 3 - 1 < 0) shift_offset += WIDTH;
-		cell[i] = grid[shift_offset];
-		if (i == 4) {
-			for (int j = 0; j < cell[i].count; ++j)
-				center.push_back((*particle)[cell[i].offset + j]);
-		}
-		else {
-			for (int j = 0; j < cell[i].count; ++j)
-				buffer.push_back((*particle)[cell[i].offset + j]);
-		}
-	}
-
-	// shift particle near the boundary
-	if (x == WIDTH - 1) {
-		for (auto par = buffer.begin(); par != buffer.end(); ++par) {
-			if (par->x < cellsizeX) par->x += sys_w;
-		}
-	}
-	if (y == HEIGHT - 1) {
-		for (auto par = buffer.begin(); par != buffer.end(); ++par) {
-			if (par->y < cellsizeY) par->y += sys_h;
-		}
-	}
-	if (x == 0) {
-		for (auto par = buffer.begin(); par != buffer.end(); ++par) {
-			if (par->x > sys_w - cellsizeX) par->x -= sys_w;
-		}
-	}
-	if (y == 0) {
-		for (auto par = buffer.begin(); par != buffer.end(); ++par) {
-			if (par->y > sys_h - cellsizeY) par->y -= sys_h;
-		}
-	}
-
-	// Return when no need to check
-	//if (buffer.empty()) return; // return when no particle
-
-	// connection check
-	// adjacent cells
-	for (auto target = center.begin(); target != center.end(); ++target) {
-		for (auto par = buffer.begin(); par != buffer.end(); ++par) {
-			dist = (target->x - par->x)*(target->x - par->x)
-				+ (target->y - par->y)*(target->y - par->y);
-			if (dist < radius * radius) {
-				target->connectedNum += 1;
-				target->connectivity += probability(dist, diameter, radius - diameter);
-			}
-		}
-	}
-	// self-check
-	for (auto target = center.begin(); target != center.end(); ++target) {
-		for (auto par = center.begin(); par != center.end(); ++par) {
-			dist = (target->x - par->x)*(target->x - par->x)
-				+ (target->y - par->y)*(target->y - par->y);
-			if (dist < radius * radius) {
-				target->connectedNum += 0.5;
-				par->connectedNum += 0.5;
-				prob = probability(dist, diameter, radius - diameter) * 0.5;
-				target->connectivity += prob;
-				par->connectivity += prob;
-			}
-		}
-	}
-
-	// Copy result back
-	auto target = center.begin();
-	for (int j = 0; j < cell[4].count; ++j) {
-		(*particle)[cell[4].offset + j] = *target++;
-	}
+	delete grid;
 }
-
-
-AdjacencyMatrix::AdjacencyMatrix(int dim)
-{
-	dimension = dim;
-	mat = new double*[dim];
-	for (size_t i = 0; i < dim; i++)
-		mat[i] = new double[dim];
-}
-
-AdjacencyMatrix::~AdjacencyMatrix()
-{
-	for (size_t i = 0; i < dimension; i++)
-		delete[] mat[i];
-	delete[] mat;
-}
-
-void AdjacencyMatrix::setValue(int i, int j, double value)
-{
-	mat[i][j] = value;
-}
-
-void AdjacencyMatrix::addProperty()
-{
-	;
-}
-
-

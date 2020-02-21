@@ -8,7 +8,7 @@
 
 #include "Measurement.hpp"
 
-void structuralFactor(render_info *info)
+void structuralFactor(info *info)
 {
 	double w = info->sys_w;
 	double h = info->sys_h;
